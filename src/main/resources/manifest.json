@@ -2,13 +2,14 @@
     "Group": "narwhals",
     "Name": "Perfect Utils",
     "Version": "1.0.0",
-    "Description": "Perfect Utils \u2014 Hytale utility primitives",
+    "Description": "Perfect Utils: Hytale utility primitives",
     "Authors": [
         {
             "Name": "narwhals"
         },
         {
-            "Name": "ziggfreed"
+            "Name": "Ziggfreed",
+            "Url": "https://www.curseforge.com/hytale/mods/mmo-skill-tree"
         }
     ],
     "Website": "",

@@ -17,7 +17,6 @@ import com.narwhals.perfectutils.stun.StunSystem;
 /**
  * Umbrella plugin entry. Hosts every utility shipped from this repo:
  * <ul>
- * <li>HyItemId — {@code /itemid} command + UI page</li>
  * <li>Stun-mob primitive — ECS component/system + reflective
  * {@link StunMobAPI}</li>
  * </ul>
