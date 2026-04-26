@@ -1,0 +1,25 @@
+{
+    "Group": "narwhals",
+    "Name": "Perfect Utils",
+    "Version": "1.0.0",
+    "Description": "Perfect Utils \u2014 Hytale utility primitives",
+    "Authors": [
+        {
+            "Name": "narwhals"
+        },
+        {
+            "Name": "ziggfreed"
+        }
+    ],
+    "Website": "",
+    "ServerVersion": "*",
+    "Dependencies": {
+        
+    },
+    "DisabledByDefault": false,
+    "Main": "com.narwhals.perfectutils.PerfectUtilsPlugin",
+    "OptionalDependencies": {
+        
+    },
+    "IncludesAssetPack": true
+}

@@ -1,0 +1,9 @@
+{
+  "Duration": 0.5,
+  "ApplicationEffects": {
+    "HorizontalSpeedMultiplier": 0,
+    "MovementEffects": {
+      "DisableAll": true
+    }
+  }
+}
