@@ -13,10 +13,14 @@ import com.hypixel.hytale.server.core.modules.time.TimeResource;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 /**
- * Per-entity ticking system that drains {@link AggroComponent} windows.
- * SUSTAINED_IGNORE windows re-call {@link AggroUtil#suppressTargeting} every
- * tick; TAUNT windows re-call {@link AggroUtil#redirectAggro}. The component
- * is removed once the deadline passes.
+ * Per-entity ticking system that runs all {@link AggroUtil} sweeps. Outer
+ * query is {@link AggroComponent}, mirroring Zephyr's
+ * {@code KunaiVanishTickSystem} — the only proven-safe outer query for
+ * inner {@code store.forEachChunk(NPCEntity, ...)} calls.
+ *
+ * <p>{@code ONE_SHOT} fires the sweep once and removes the component the
+ * same tick. {@code SUSTAINED_IGNORE} and {@code TAUNT} re-fire each tick
+ * until the deadline passes, then remove.
  */
 public class AggroTickSystem extends EntityTickingSystem<EntityStore> {
 
@@ -39,18 +43,29 @@ public class AggroTickSystem extends EntityTickingSystem<EntityStore> {
         AggroComponent aggro = chunk.getComponent(index, aggroComponentType);
         if (aggro == null) return;
 
-        long nowMs = store.getResource(TimeResource.getResourceType()).getNow().toEpochMilli();
         Ref<EntityStore> entityRef = chunk.getReferenceTo(index);
 
-        if (nowMs >= aggro.getDeadlineMs()) {
-            commandBuffer.removeComponent(entityRef, aggroComponentType);
-            return;
-        }
-
         switch (aggro.getMode()) {
-            case SUSTAINED_IGNORE -> AggroUtil.suppressTargeting(store, entityRef, aggro.getRadius());
-            case TAUNT -> AggroUtil.redirectAggro(store, entityRef, aggro.getRadius());
-            case ONE_SHOT -> commandBuffer.removeComponent(entityRef, aggroComponentType);
+            case ONE_SHOT -> {
+                AggroUtil.resetTargetingNearby(store, entityRef, aggro.getRadius());
+                commandBuffer.removeComponent(entityRef, aggroComponentType);
+            }
+            case SUSTAINED_IGNORE -> {
+                long nowMs = store.getResource(TimeResource.getResourceType()).getNow().toEpochMilli();
+                if (nowMs >= aggro.getDeadlineMs()) {
+                    commandBuffer.removeComponent(entityRef, aggroComponentType);
+                } else {
+                    AggroUtil.suppressTargeting(store, entityRef, aggro.getRadius());
+                }
+            }
+            case TAUNT -> {
+                long nowMs = store.getResource(TimeResource.getResourceType()).getNow().toEpochMilli();
+                if (nowMs >= aggro.getDeadlineMs()) {
+                    commandBuffer.removeComponent(entityRef, aggroComponentType);
+                } else {
+                    AggroUtil.redirectAggro(store, entityRef, aggro.getRadius());
+                }
+            }
         }
     }
 }

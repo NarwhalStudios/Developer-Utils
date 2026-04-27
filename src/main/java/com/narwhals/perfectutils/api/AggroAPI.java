@@ -159,24 +159,34 @@ public final class AggroAPI {
      * Drain pending requests. Called by
      * {@link com.narwhals.perfectutils.aggro.AggroQueueDrainSystem} once per
      * world tick with a fresh {@link CommandBuffer}.
+     *
+     * <p>Drain does NOT call {@link AggroUtil} directly — Hytale's Store
+     * disallows {@code forEachChunk} from inside a system tick when the outer
+     * iteration is on a different archetype (e.g. {@link
+     * com.hypixel.hytale.server.core.universe.PlayerRef}). All actual mob
+     * targeting work lives in {@link com.narwhals.perfectutils.aggro.AggroTickSystem},
+     * which iterates the per-player {@link AggroComponent} archetype — Zephyr's
+     * proven-safe pattern. Drain just stages components.
      */
     public void drainPending(@Nonnull Store<EntityStore> store,
             @Nonnull CommandBuffer<EntityStore> commandBuffer, long nowMs) {
+        if (aggroComponentType == null) {
+            // Drop everything quietly; the plugin hasn't finished setup yet.
+            pending.clear();
+            return;
+        }
         PendingRequest req;
         while ((req = pending.poll()) != null) {
             if (!req.targetRef.isValid()) continue;
             try {
                 switch (req.type) {
-                    case DROP_AGGRO -> AggroUtil.resetTargetingNearby(store, req.targetRef, req.radius);
-                    case SUPPRESS -> startSustained(store, commandBuffer, req, nowMs,
-                            AggroComponent.Mode.SUSTAINED_IGNORE);
-                    case TAUNT -> startSustained(store, commandBuffer, req, nowMs,
-                            AggroComponent.Mode.TAUNT);
-                    case CLEAR -> {
-                        if (aggroComponentType != null) {
-                            commandBuffer.removeComponent(req.targetRef, aggroComponentType);
-                        }
-                    }
+                    case DROP_AGGRO -> stageWindow(store, commandBuffer, req,
+                            AggroComponent.Mode.ONE_SHOT, nowMs + 1L);
+                    case SUPPRESS -> stageWindow(store, commandBuffer, req,
+                            AggroComponent.Mode.SUSTAINED_IGNORE, nowMs + req.durationMs);
+                    case TAUNT -> stageWindow(store, commandBuffer, req,
+                            AggroComponent.Mode.TAUNT, nowMs + req.durationMs);
+                    case CLEAR -> commandBuffer.removeComponent(req.targetRef, aggroComponentType);
                 }
             } catch (Throwable t) {
                 PerfectUtilsPlugin.LOGGER.atWarning().log(
@@ -185,32 +195,17 @@ public final class AggroAPI {
         }
     }
 
-    private void startSustained(@Nonnull Store<EntityStore> store,
-            @Nonnull CommandBuffer<EntityStore> commandBuffer, @Nonnull PendingRequest req, long nowMs,
-            @Nonnull AggroComponent.Mode mode) {
-        if (aggroComponentType == null) {
-            PerfectUtilsPlugin.LOGGER.atWarning().log(
-                    "AggroAPI: aggroComponentType not set; sustained request dropped");
-            return;
-        }
-
-        long deadline = nowMs + req.durationMs;
+    private void stageWindow(@Nonnull Store<EntityStore> store,
+            @Nonnull CommandBuffer<EntityStore> commandBuffer, @Nonnull PendingRequest req,
+            @Nonnull AggroComponent.Mode mode, long deadlineMs) {
         AggroComponent existing = store.getComponent(req.targetRef, aggroComponentType);
         if (existing != null) {
             existing.setMode(mode);
-            existing.setDeadlineMs(deadline);
+            existing.setDeadlineMs(deadlineMs);
             existing.setRadius(req.radius);
         } else {
             commandBuffer.addComponent(req.targetRef, aggroComponentType,
-                    new AggroComponent(mode, deadline, req.radius));
-        }
-
-        // Fire the first sweep immediately so the caster sees the effect before
-        // the next tick lands.
-        if (mode == AggroComponent.Mode.SUSTAINED_IGNORE) {
-            AggroUtil.suppressTargeting(store, req.targetRef, req.radius);
-        } else {
-            AggroUtil.redirectAggro(store, req.targetRef, req.radius);
+                    new AggroComponent(mode, deadlineMs, req.radius));
         }
     }
 }
