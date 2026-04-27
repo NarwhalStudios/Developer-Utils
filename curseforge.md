@@ -25,6 +25,3 @@ This is the same primitive that powers parry-stun in narwhals' Perfect Parries, 
 - Plays nicely with Perfect Parries — they each track their own stun state and don't fight each other.
 - No configuration to manage; mods that use Perfect Utils set the stun durations themselves.
 
-## Reporting bugs
-
-Open an issue on the GitHub repo or post in the narwhals modding community. Include a server log and a description of which other mods were active.
