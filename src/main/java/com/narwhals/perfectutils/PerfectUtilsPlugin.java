@@ -8,18 +8,29 @@ import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.narwhals.perfectutils.aggro.AggroComponent;
+import com.narwhals.perfectutils.aggro.AggroTickSystem;
+import com.narwhals.perfectutils.api.AggroAPI;
 import com.narwhals.perfectutils.api.StunMobAPI;
 import com.narwhals.perfectutils.stun.StunComponent;
 import com.narwhals.perfectutils.stun.StunMobUtil;
-import com.narwhals.perfectutils.stun.StunQueueDrainSystem;
 import com.narwhals.perfectutils.stun.StunSystem;
+import com.narwhals.perfectutils.system.QueueDrainSystem;
 
 /**
  * Umbrella plugin entry. Hosts every utility shipped from this repo:
  * <ul>
  * <li>Stun-mob primitive — ECS component/system + reflective
  * {@link StunMobAPI}</li>
+ * <li>Aggro / taunt primitive — ECS component/system + reflective
+ * {@link AggroAPI}</li>
  * </ul>
+ *
+ * <p>Per-API queue drains are handled by one shared
+ * {@link QueueDrainSystem} per API singleton, hooked off the
+ * {@code DrainableAPI} interface. Each {@code QueueDrainSystem} keeps its
+ * own {@code lastDrainMs} gate so multiple instances ticking in the same
+ * frame don't race.
  */
 public class PerfectUtilsPlugin extends JavaPlugin {
 
@@ -28,6 +39,7 @@ public class PerfectUtilsPlugin extends JavaPlugin {
     private static volatile PerfectUtilsPlugin instance;
 
     private ComponentType<EntityStore, StunComponent> stunComponentType;
+    private ComponentType<EntityStore, AggroComponent> aggroComponentType;
 
     public PerfectUtilsPlugin(@Nonnull JavaPluginInit init) {
         super(init);
@@ -46,6 +58,8 @@ public class PerfectUtilsPlugin extends JavaPlugin {
         initSystems();
 
         StunMobAPI.init(this);
+        AggroAPI.init(this);
+        AggroAPI.get().setAggroComponentType(aggroComponentType);
 
         LOGGER.atInfo().log("Perfect Utils setup complete");
     }
@@ -53,6 +67,7 @@ public class PerfectUtilsPlugin extends JavaPlugin {
     @Override
     protected void shutdown() {
         StunMobAPI.clearInstance();
+        AggroAPI.clearInstance();
         instance = null;
         LOGGER.atInfo().log("Perfect Utils shutdown");
     }
@@ -61,15 +76,22 @@ public class PerfectUtilsPlugin extends JavaPlugin {
         return stunComponentType;
     }
 
+    public ComponentType<EntityStore, AggroComponent> getAggroComponentType() {
+        return aggroComponentType;
+    }
+
     private void initComponents() {
         ComponentRegistryProxy<EntityStore> registry = this.getEntityStoreRegistry();
         stunComponentType = registry.registerComponent(StunComponent.class, StunComponent::new);
+        aggroComponentType = registry.registerComponent(AggroComponent.class, AggroComponent::new);
         StunMobUtil.init(stunComponentType);
     }
 
     private void initSystems() {
         ComponentRegistryProxy<EntityStore> registry = this.getEntityStoreRegistry();
         registry.registerSystem(new StunSystem(stunComponentType));
-        registry.registerSystem(new StunQueueDrainSystem());
+        registry.registerSystem(new AggroTickSystem(aggroComponentType));
+        registry.registerSystem(new QueueDrainSystem(StunMobAPI::get));
+        registry.registerSystem(new QueueDrainSystem(AggroAPI::get));
     }
 }
