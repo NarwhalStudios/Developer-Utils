@@ -28,7 +28,7 @@ import com.narwhals.perfectutils.stun.StunMobUtil;
  * read the ECS component directly via {@link Store}, so they reflect the state
  * as of the current call (subject to the 1-tick application delay above).
  */
-public final class StunMobAPI implements DrainableAPI {
+public final class StunMobAPI {
 
     private enum RequestType { STUN, STAGGER, WAKE }
 
@@ -116,11 +116,10 @@ public final class StunMobAPI implements DrainableAPI {
     }
 
     /**
-     * Drain pending requests. Called by the generic
-     * {@link com.narwhals.perfectutils.system.QueueDrainSystem} once per
+     * Drain pending requests. Called by
+     * {@link com.narwhals.perfectutils.stun.StunQueueDrainSystem} once per
      * world tick with a fresh {@link CommandBuffer}.
      */
-    @Override
     public void drainPending(@Nonnull Store<EntityStore> store,
             @Nonnull CommandBuffer<EntityStore> commandBuffer, long nowMs) {
         PendingRequest req;

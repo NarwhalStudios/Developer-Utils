@@ -9,13 +9,14 @@ import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.narwhals.perfectutils.aggro.AggroComponent;
+import com.narwhals.perfectutils.aggro.AggroQueueDrainSystem;
 import com.narwhals.perfectutils.aggro.AggroTickSystem;
 import com.narwhals.perfectutils.api.AggroAPI;
 import com.narwhals.perfectutils.api.StunMobAPI;
 import com.narwhals.perfectutils.stun.StunComponent;
 import com.narwhals.perfectutils.stun.StunMobUtil;
+import com.narwhals.perfectutils.stun.StunQueueDrainSystem;
 import com.narwhals.perfectutils.stun.StunSystem;
-import com.narwhals.perfectutils.system.QueueDrainSystem;
 
 /**
  * Umbrella plugin entry. Hosts every utility shipped from this repo:
@@ -26,11 +27,9 @@ import com.narwhals.perfectutils.system.QueueDrainSystem;
  * {@link AggroAPI}</li>
  * </ul>
  *
- * <p>Per-API queue drains are handled by one shared
- * {@link QueueDrainSystem} per API singleton, hooked off the
- * {@code DrainableAPI} interface. Each {@code QueueDrainSystem} keeps its
- * own {@code lastDrainMs} gate so multiple instances ticking in the same
- * frame don't race.
+ * <p>Each API has a dedicated queue-drain system. Hytale's ECS registry
+ * keys systems by {@code Class}, so two instances of one generic drain
+ * class would collide at registration time — keep them separate.
  */
 public class PerfectUtilsPlugin extends JavaPlugin {
 
@@ -91,7 +90,7 @@ public class PerfectUtilsPlugin extends JavaPlugin {
         ComponentRegistryProxy<EntityStore> registry = this.getEntityStoreRegistry();
         registry.registerSystem(new StunSystem(stunComponentType));
         registry.registerSystem(new AggroTickSystem(aggroComponentType));
-        registry.registerSystem(new QueueDrainSystem(StunMobAPI::get));
-        registry.registerSystem(new QueueDrainSystem(AggroAPI::get));
+        registry.registerSystem(new StunQueueDrainSystem());
+        registry.registerSystem(new AggroQueueDrainSystem());
     }
 }
