@@ -1,8 +1,8 @@
 {
     "Group": "narwhals",
     "Name": "Perfect Utils",
-    "Version": "1.0.0",
-    "Description": "Perfect Utils: Hytale utility primitives",
+    "Version": "1.0.1",
+    "Description": "${mod_description}",
     "Authors": [
         {
             "Name": "narwhals"

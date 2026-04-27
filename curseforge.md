@@ -8,7 +8,8 @@ Install Perfect Utils only when another mod tells you to. If a mod's description
 
 ## What it currently provides
 
-**Mob stun primitive.** Mods can ask Perfect Utils to stun a mob for a configurable duration. While stunned, the mob:
+### **Mob stun primitive**
+Mods can ask Perfect Utils to stun a mob for a configurable duration. While stunned, the mob:
 
 - Stops moving (movement speed clamped to zero)
 - Stops attacking (its current swing is interrupted, AI is suppressed)
@@ -19,7 +20,8 @@ When the stun runs out, the mob shakes it off and resumes whatever it was doing.
 
 This is the same primitive that powers parry-stun in narwhals' Perfect Parries, lifted into a standalone library so any mod can use it — ability mods can build "stun on hit" effects, weapon mods can ship stun-on-crit, boss mods can apply long lockdowns during phases, and so on.
 
-**Mob aggro / taunt primitive.** Mods can ask Perfect Utils to manipulate which target a mob is paying attention to. Three flavors against the same underlying state:
+### **Mob aggro / taunt primitive** 
+Mods can ask Perfect Utils to manipulate which target a mob is paying attention to. Three flavors against the same underlying state:
 
 - **Drop aggro** — a one-shot reset. Pursuing mobs in a configurable radius lose track of the player and forget them from their target memory. The mob may pick them up again on the next AI tick if they're still in detection range — useful for "blink away and disappear from the chase," not for permanent invisibility.
 - **Suppress** — a sustained "ignore me" window. For a configurable duration, mobs in radius treat the player as non-hostile and have their target memory continuously wiped. Useful for stealth abilities and short invulnerable phases.
