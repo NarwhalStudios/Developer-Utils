@@ -1,0 +1,58 @@
+---
+title: Changelog
+description: All notable changes to Perfect Utils.
+---
+
+The format is based on
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
+adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.0.1] — 2026-04-27
+
+### Added
+
+- `AggroAPI` — mob aggro / taunt controller, ported from Zephyr's
+  `KunaiVanishTickSystem`.
+  - `dropAggro(store, playerRef, radius)` — one-shot targeting reset
+    within `radius`.
+  - `suppress(store, playerRef, durationMs, radius)` — sustained
+    `Attitude.IGNORE` window.
+  - `taunt(store, tauntRef, durationMs, radius)` — pin nearby mobs to the
+    taunter.
+  - `clear`, `isSuppressed`, `isTaunting`, `getRemainingMs` queries.
+- `AggroComponent`, `AggroTickSystem`, `AggroQueueDrainSystem` — per-player
+  ECS state, swept once per tick. Drain stages components only; the tick
+  system owns all `forEachChunk(NPCEntity, ...)` work to avoid
+  nested-iteration errors on the store.
+- `AggroUtil` — static helpers (`resetTargetingNearby`, `suppressTargeting`,
+  `redirectAggro`) using `MarkedEntitySupport` +
+  `WorldSupport.overrideAttitude` + `TargetMemory.knownHostiles`.
+- `radius <= 0` iterates every NPC in the world (Zephyr-style true
+  invisibility); positive values bound the sweep with a squared-distance
+  filter against `TransformComponent`.
+
+## [1.0.0] — 2026-04-26
+
+### Added
+
+- Initial release.
+- `StunMobAPI` — mob stun primitive lifted from Perfect Parries.
+  - `applyStun(store, target, durationMs, source)` — full stun: movement
+    freeze + AI suppression + interaction lock.
+  - `applyStagger(store, target, durationMs, source)` — lighter stagger;
+    won't downgrade an active full stun.
+  - `wakeUp(store, target)` — cancel an active stun early.
+  - `isStunned`, `isFullStun`, `getRemainingMs` queries.
+- `StunComponent`, `StunSystem`, `StunQueueDrainSystem`, `StunMobUtil` —
+  per-entity ECS state, drained per-tick, with re-application each frame
+  to outlast Hytale's short effect expiry.
+- `StunConstants` — `STUN_END_THRESHOLD_SECONDS = 0.025f`,
+  `STUN_WAKE_DELAY_MS = 250`, `STAGGER_WAKE_DELAY_MS = 100`.
+- `EffectUtil` — minimal `EntityEffect` lookup + apply, lifted from Perfect
+  Parries.
+- Asset packs `DU_Entity_Stunned` / `DU_Entity_Staggered`
+  (`HorizontalSpeedMultiplier: 0` + `MovementEffects.DisableAll: true`,
+  0.5 s, re-applied per tick).
+- Public APIs take `Store<EntityStore>` only — requests queue on a
+  `ConcurrentLinkedQueue` and drain on the next world tick (~1 tick / 50 ms
+  latency at 20 TPS).

@@ -1,0 +1,51 @@
+---
+title: StunMobAPI
+description: Freeze a mob's movement, suppress its combat AI, and lock its interactions for a duration.
+---
+
+Two flavors:
+
+- `applyStun` — full stun (movement freeze + AI suppression + interaction lock).
+- `applyStagger` — lighter stagger; never downgrades an active full stun.
+
+State lives on a per-entity `StunComponent`; `StunSystem` re-applies the
+entity effect each tick because Hytale effects expire after 0.5 s.
+
+## Methods
+
+| Method | Effect |
+| --- | --- |
+| `applyStun(store, target, durationMs, source)` | Full stun. |
+| `applyStagger(store, target, durationMs, source)` | Stagger. Won't downgrade a full stun. |
+| `wakeUp(store, target)` | Cancel an active stun early. |
+| `isStunned(store, target)` | True while stun or stagger is active. |
+| `isFullStun(store, target)` | True only for full stuns. |
+| `getRemainingMs(store, target)` | Remaining duration in ms. |
+
+`store` is `Store<EntityStore>`; `target` and `source` are
+`Ref<EntityStore>`. `source` is optional attribution — pass `null` if you
+have no attacker to credit.
+
+## Constants
+
+From `com.narwhals.perfectutils.stun.StunConstants`:
+
+| Constant | Value | Purpose |
+| --- | --- | --- |
+| `STUN_END_THRESHOLD_SECONDS` | `0.025f` | Stun ends when remaining time falls below this (avoids float drift). |
+| `STUN_WAKE_DELAY_MS` | `250` | Delay after a full stun ends before AI resumes. |
+| `STAGGER_WAKE_DELAY_MS` | `100` | Delay after a stagger ends before AI resumes. |
+| `STUN_EFFECT_ASSET` | `"DU_Entity_Stunned"` | Asset id for full-stun effect. |
+| `STAGGER_EFFECT_ASSET` | `"DU_Entity_Staggered"` | Asset id for stagger effect. |
+
+Latency: ~1 tick (~50 ms at 20 TPS).
+
+## Example
+
+```java
+applyStun.invoke(api, store, mobRef, 2000L, attackerRef);
+applyStagger.invoke(api, store, mobRef, 300L, attackerRef);
+wakeUp.invoke(api, store, mobRef);
+```
+
+See [Consuming the API](/docs/consuming) for the reflective lookup pattern.

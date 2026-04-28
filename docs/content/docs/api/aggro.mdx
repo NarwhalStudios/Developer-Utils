@@ -1,0 +1,52 @@
+---
+title: AggroAPI
+description: Mob aggro / taunt controller. Drop, suppress, or redirect.
+---
+
+Three modes against the same in-mod state, ported from Zephyr's
+`KunaiVanishTickSystem`:
+
+- `dropAggro` — one-shot. Clears current targeting + wipes the player from
+  nearby `TargetMemory`. Mobs may re-acquire on the next AI tick.
+- `suppress` — sustained `Attitude.IGNORE` window for `durationMs`.
+- `taunt` — pin nearby mobs to the taunter for `durationMs` via
+  `closestHostile` + `Attitude.HOSTILE` override.
+
+## Methods
+
+| Method | Effect |
+| --- | --- |
+| `dropAggro(store, playerRef, radius)` | One-shot reset. |
+| `suppress(store, playerRef, durationMs, radius)` | Sustained ignore window. |
+| `taunt(store, tauntRef, durationMs, radius)` | Pin mobs to taunter. |
+| `clear(store, playerRef)` | Cancel an active suppress/taunt. |
+| `isSuppressed(store, playerRef)` | True while suppress is active. |
+| `isTaunting(store, playerRef)` | True while taunt is active. |
+| `getRemainingMs(store, playerRef)` | Remaining duration in ms. |
+
+`store` is `Store<EntityStore>`; refs are `Ref<EntityStore>`. `radius` is a
+`double` in world-space blocks.
+
+## Radius
+
+- `radius > 0` — squared-distance filter against `TransformComponent`.
+- `radius <= 0` — every NPC in the world (Zephyr-style true invisibility).
+  Use with care.
+
+If a window is already active for the player, the most recent request wins
+— `mode`, `deadlineMs`, and `radius` are overwritten in place.
+
+Latency: 1–2 ticks (~50–100 ms at 20 TPS), because drain stages the
+component and `AggroTickSystem` runs the sweep on the following tick. See
+[Architecture](/docs/architecture#why-the-tick-system-owns-all-sweeps).
+
+## Example
+
+```java
+dropAggro.invoke(api, store, playerRef, 30.0);          // blink away
+suppress.invoke(api, store, playerRef, 4000L, 25.0);    // 4s stealth, 25-block
+taunt.invoke(api, store, tankRef, 8000L, 12.0);         // 8s taunt, 12-block
+clear.invoke(api, store, playerRef);                    // cancel early
+```
+
+See [Consuming the API](/docs/consuming) for the reflective lookup pattern.

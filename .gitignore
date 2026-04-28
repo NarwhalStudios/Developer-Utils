@@ -5,3 +5,11 @@ build/
 run/
 .claude
 CLAUDE.md
+
+# Docs site (Next.js / Fumadocs)
+docs/node_modules/
+docs/.next/
+docs/.source/
+docs/out/
+docs/.vercel/
+.vercel

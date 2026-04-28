@@ -1,0 +1,14 @@
+{
+  "title": "Documentation",
+  "pages": [
+    "index",
+    "install",
+    "build",
+    "consuming",
+    "architecture",
+    "---API Reference---",
+    "api",
+    "---",
+    "changelog"
+  ]
+}

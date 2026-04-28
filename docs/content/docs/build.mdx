@@ -1,0 +1,29 @@
+---
+title: Build from source
+description: JDK 25, a local Hytale install, and Gradle.
+---
+
+## Requirements
+
+- **JDK 25** (per `gradle.properties`).
+- **A local Hytale install via the official launcher** — the build references
+  `HytaleServer.jar` from there.
+  - Windows: `%APPDATA%\Hytale`
+  - macOS: `~/Library/Application Support/Hytale`
+  - Linux: `~/.config/Hytale`
+
+No external sibling-jar dependencies.
+
+## Build
+
+```bash
+./gradlew build
+```
+
+On Windows, invoke Gradle through PowerShell:
+
+```bash
+powershell -Command "cd 'D:\path\to\Developer-Utils'; & .\gradlew.bat build 2>&1"
+```
+
+Output: `build/libs/Perfect Utils-1.0.0.jar`.

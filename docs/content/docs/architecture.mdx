@@ -1,0 +1,63 @@
+---
+title: Architecture
+description: How the queue + drain pattern lets the API be CommandBuffer-free, and why the tick system owns all sweeps.
+---
+
+All code lives under `com.narwhals.perfectutils`. Two parallel modules
+(stun, aggro) share a pattern: a public API enqueues requests, a per-API
+drain system materializes them during a world tick.
+
+## Stun module
+
+| File | Role |
+| --- | --- |
+| `api/StunMobAPI` | Public singleton. Methods enqueue `PendingRequest`s. |
+| `stun/StunComponent` | Per-entity state (`timeRemaining`, `stunType`, `wakingUp`). |
+| `stun/StunSystem` | Drains duration, re-applies the entity effect every tick (Hytale effects expire fast), wakes the mob when remaining ≤ `STUN_END_THRESHOLD_SECONDS`. |
+| `stun/StunQueueDrainSystem` | Drains the pending queue once per tick. |
+| `stun/StunMobUtil` | `CommandBuffer`-side work: component add, entity-effect apply, `InteractionManager.clear()`, AI suppression, scheduled wake reset. |
+
+## Aggro module
+
+| File | Role |
+| --- | --- |
+| `api/AggroAPI` | Public singleton. Tracks the registered `AggroComponent` type. |
+| `aggro/AggroComponent` | Per-player state. Mode `{ONE_SHOT, SUSTAINED_IGNORE, TAUNT}`, `deadlineMs`, `radius`. |
+| `aggro/AggroTickSystem` | Per mode: ONE_SHOT runs `resetTargetingNearby` once and removes itself; the others re-run every tick until the deadline. |
+| `aggro/AggroUtil` | `resetTargetingNearby`, `suppressTargeting`, `redirectAggro` against `MarkedEntitySupport` + `WorldSupport.overrideAttitude` + `TargetMemory.knownHostiles`. |
+| `aggro/AggroQueueDrainSystem` | Drains the pending queue. **Stages components only** — does not call `AggroUtil` directly. |
+
+## Why the queue + drain pattern
+
+`addComponent` / `removeComponent` need a `CommandBuffer`, which is only
+available inside a system tick. Plugins calling `applyStun` / `dropAggro` /
+`taunt` from event handlers, ability paths, or hit callbacks don't have one.
+So the public APIs stay `Store`-only and defer ECS work to the next tick
+via the `*QueueDrainSystem`.
+
+A `lastDrainMs` gate ensures the queue drains exactly once per tick.
+
+<Callout type="warn" title="Don't consolidate the two drain systems">
+`ComponentRegistryProxy.registerSystem` keys by `Class`, so two instances of
+the same drain class collide. Adding a new drainable API means a new
+`*QueueDrainSystem` subclass — ~30 lines of pass-through.
+</Callout>
+
+## Why the tick system owns all sweeps
+
+Calling `store.forEachChunk(NPCEntity, ...)` from inside
+`AggroQueueDrainSystem.tick` throws `Store is currently processing!` —
+Hytale's Store disallows nested chunk iteration when the outer query is on
+a core type like `PlayerRef`.
+
+`AggroTickSystem` queries `AggroComponent` (a custom marker), and from
+there `forEachChunk(NPCEntity, ...)` is safe — same shape as Zephyr's
+`KunaiVanishTickSystem`. So:
+
+- **Drain stages components.** No `AggroUtil` calls from drain.
+- **Tick system runs all sweeps.** Even one-shot drops add a 1-tick
+  component that `AggroTickSystem` processes.
+
+Worst-case latency: 1–2 ticks (~50–100 ms at 20 TPS). Stun doesn't have
+this constraint — `StunMobUtil.applyStun` mutates a single mob, so it can
+be called from `StunQueueDrainSystem.tick` directly.

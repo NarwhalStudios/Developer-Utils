@@ -1,0 +1,34 @@
+---
+title: Overview
+description: A library mod for Hytale that exposes reusable gameplay primitives to other mods.
+---
+
+**Perfect Utils** is a library mod for Hytale. By itself it adds nothing
+visible — no commands, items, or config — it just exposes primitives other
+mods build on. Part of the **narwhals "Perfect" mod family**.
+
+<Cards>
+  <Card
+    title="StunMobAPI"
+    description="Freeze movement, suppress combat AI, lock interactions."
+    href="/docs/api/stun"
+  />
+  <Card
+    title="AggroAPI"
+    description="Drop, suppress, or redirect mob aggro."
+    href="/docs/api/aggro"
+  />
+</Cards>
+
+<Cards>
+  <Card title="Install" description="Drop the jar in mods/." href="/docs/install" />
+  <Card title="Consume the API" description="For mod authors." href="/docs/consuming" />
+  <Card title="Architecture" description="Queue + drain internals." href="/docs/architecture" />
+  <Card title="Build from source" description="JDK 25 + Hytale install." href="/docs/build" />
+</Cards>
+
+## Credits
+
+Stun primitive lifted from **narwhals**' Perfect Parries; aggro primitive
+ported from Zephyr's `KunaiVanishTickSystem`. **ziggfreed** extracted both
+into Perfect Utils and added the sustained-suppress and taunt modes.
