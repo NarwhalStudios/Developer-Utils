@@ -4,7 +4,16 @@ plugins {
 }
 
 ext {
-    hytaleHome = "${System.getProperty("user.home")}/AppData/Roaming/Hytale"
+    // hytaleHome points at your Hytale install root (the parent of the
+    // "install/<patchline>/..." tree). Defaults to the official launcher
+    // location; override per-machine via a gitignored local.properties with
+    //   hytaleHome=D:/Games/Hytale
+    def localProps = new Properties()
+    def localPropsFile = file('local.properties')
+    if (localPropsFile.exists()) {
+        localPropsFile.withInputStream { localProps.load(it) }
+    }
+    hytaleHome = localProps.getProperty('hytaleHome', "${System.getProperty("user.home")}/AppData/Roaming/Hytale")
 }
 
 java {

@@ -3,6 +3,7 @@ build/
 .idea/
 *.iml
 run/
+local.properties
 .claude
 CLAUDE.md
 
