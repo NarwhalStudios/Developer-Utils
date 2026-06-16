@@ -48,12 +48,12 @@ public class AggroTickSystem extends EntityTickingSystem<EntityStore> {
         switch (aggro.getMode()) {
             case ONE_SHOT -> {
                 AggroUtil.resetTargetingNearby(store, entityRef, aggro.getRadius());
-                commandBuffer.removeComponent(entityRef, aggroComponentType);
+                removeAggro(store, commandBuffer, entityRef);
             }
             case SUSTAINED_IGNORE -> {
                 long nowMs = store.getResource(TimeResource.getResourceType()).getNow().toEpochMilli();
                 if (nowMs >= aggro.getDeadlineMs()) {
-                    commandBuffer.removeComponent(entityRef, aggroComponentType);
+                    removeAggro(store, commandBuffer, entityRef);
                 } else {
                     AggroUtil.suppressTargeting(store, entityRef, aggro.getRadius());
                 }
@@ -61,11 +61,26 @@ public class AggroTickSystem extends EntityTickingSystem<EntityStore> {
             case TAUNT -> {
                 long nowMs = store.getResource(TimeResource.getResourceType()).getNow().toEpochMilli();
                 if (nowMs >= aggro.getDeadlineMs()) {
-                    commandBuffer.removeComponent(entityRef, aggroComponentType);
+                    removeAggro(store, commandBuffer, entityRef);
                 } else {
                     AggroUtil.redirectAggro(store, entityRef, aggro.getRadius());
                 }
             }
+        }
+    }
+
+    /**
+     * Remove the {@link AggroComponent} only if the entity's LIVE archetype still has it. The outer
+     * query hands us entities by their CHUNK archetype, but an entity's live archetype can change
+     * within the same tick (e.g. a taunted player dies and the engine drops the component) before this
+     * deferred removal flushes. A raw {@code removeComponent} then throws
+     * "Archetype doesn't contain ComponentType!", which crashed the world thread during teardown and
+     * ejected the dying player to the overworld still dead. Re-checking the live store makes it a no-op.
+     */
+    private void removeAggro(@Nonnull Store<EntityStore> store,
+            @Nonnull CommandBuffer<EntityStore> commandBuffer, @Nonnull Ref<EntityStore> entityRef) {
+        if (store.getComponent(entityRef, aggroComponentType) != null) {
+            commandBuffer.removeComponent(entityRef, aggroComponentType);
         }
     }
 }

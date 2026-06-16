@@ -186,7 +186,14 @@ public final class AggroAPI {
                             AggroComponent.Mode.SUSTAINED_IGNORE, nowMs + req.durationMs);
                     case TAUNT -> stageWindow(store, commandBuffer, req,
                             AggroComponent.Mode.TAUNT, nowMs + req.durationMs);
-                    case CLEAR -> commandBuffer.removeComponent(req.targetRef, aggroComponentType);
+                    case CLEAR -> {
+                        // Only remove if the live archetype still has it - removeComponent throws
+                        // "Archetype doesn't contain ComponentType!" otherwise (e.g. clearing a player
+                        // whose component was already dropped when they died).
+                        if (store.getComponent(req.targetRef, aggroComponentType) != null) {
+                            commandBuffer.removeComponent(req.targetRef, aggroComponentType);
+                        }
+                    }
                 }
             } catch (Throwable t) {
                 PerfectUtilsPlugin.LOGGER.atWarning().log(
