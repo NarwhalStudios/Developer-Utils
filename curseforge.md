@@ -31,7 +31,7 @@ All three modes work on any mob in the world — bosses, hostile fauna, summoned
 
 ## Compatibility
 
-- Works on any Hytale server.
+- Updated for Hytale Update 5 (server 0.5.x) in version 1.0.2. Use 1.0.2 or newer on Update 5 servers; older builds will not load there.
 - Plays nicely with Perfect Parries — they each track their own stun state and don't fight each other.
 - The aggro and taunt windows are tracked per-player, so a mod can't accidentally double-apply them; the most recent request wins, the previous one is replaced.
 - No configuration to manage; mods that use Perfect Utils set the durations and radii themselves.

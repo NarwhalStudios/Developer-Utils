@@ -125,13 +125,15 @@ When Perfect Utils is loaded, the calls dispatch through the adapter. When it is
 Requires:
 
 - JDK 25 (per `gradle.properties`).
-- A local Hytale install via the official launcher (Windows: `%APPDATA%\Hytale`). The build references `HytaleServer.jar` from there.
+- A local Hytale install via the official launcher (Windows: `%APPDATA%\Hytale`). The build references `HytaleServer.jar` from there. Build against the matching server version: Hytale Update 5 (server `0.5.x`) is required from 1.0.2 onward.
+
+If your install is not in the default launcher location, set `hytaleHome` in a gitignored `local.properties` in the project root (for example `hytaleHome=D:/Games/Hytale`); `build.gradle` falls back to the launcher default when the file is absent.
 
 ```bash
 ./gradlew build
 ```
 
-Output: `build/libs/Perfect Utils-1.0.0.jar`.
+Output: `build/libs/Perfect Utils-1.0.3.jar`.
 
 The build is self-contained — no external sibling-jar dependencies.
 

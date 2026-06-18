@@ -14,6 +14,22 @@ description: JDK 25, a local Hytale install, and Gradle.
 
 No external sibling-jar dependencies.
 
+## Custom install location
+
+If your Hytale install is not in the default launcher location, point the
+build at it with a gitignored `local.properties` in the project root:
+
+```properties
+# Hytale install root containing install/<patchline>/package/game/latest/Server/HytaleServer.jar
+hytaleHome=D:/Games/Hytale
+```
+
+`build.gradle` reads `hytaleHome` from this file when present and otherwise
+falls back to the launcher default above. `local.properties` is gitignored,
+so each machine keeps its own path. Build against the matching server version:
+Hytale Update 5 (server `0.5.x`) is required from 1.0.2 onward, since Update 5
+moved the math vector types to JOML.
+
 ## Build
 
 ```bash
@@ -26,4 +42,4 @@ On Windows, invoke Gradle through PowerShell:
 powershell -Command "cd 'D:\path\to\Developer-Utils'; & .\gradlew.bat build 2>&1"
 ```
 
-Output: `build/libs/Perfect Utils-1.0.0.jar`.
+Output: `build/libs/Perfect Utils-1.0.3.jar`.
