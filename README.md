@@ -133,7 +133,7 @@ If your install is not in the default launcher location, set `hytaleHome` in a g
 ./gradlew build
 ```
 
-Output: `build/libs/Perfect Utils-1.0.3.jar`.
+Output: `build/libs/Perfect Utils-1.1.0.jar`.
 
 The build is self-contained — no external sibling-jar dependencies.
 

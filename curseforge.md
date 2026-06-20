@@ -18,6 +18,8 @@ Mods can ask Perfect Utils to stun a mob for a configurable duration. While stun
 
 When the stun runs out, the mob shakes it off and resumes whatever it was doing.
 
+The same stun also works on players (not just mobs), so PvP mods can lock down an opponent for a short window. A stunned player's client disables its own movement input for the duration.
+
 This is the same primitive that powers parry-stun in narwhals' Perfect Parries, lifted into a standalone library so any mod can use it — ability mods can build "stun on hit" effects, weapon mods can ship stun-on-crit, boss mods can apply long lockdowns during phases, and so on.
 
 ### **Mob aggro / taunt primitive** 

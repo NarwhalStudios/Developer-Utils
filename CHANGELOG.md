@@ -4,6 +4,12 @@ All notable changes to Perfect Utils are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-06-20
+
+### Added
+
+- `StunMobAPI.stunEntity(store, target, durationMs, source)` and the no-source overload `stunEntity(store, target, durationMs)`: entity-neutral entry points that stun ANY entity, mob OR player. The stun pipeline was already entity-agnostic (movement is frozen by pushing a stun `EntityEffect` of zero horizontal speed + `MovementEffects.DisableAll` through the target's `EffectControllerComponent`, which a player carries just like a mob via the vanilla `/player effect apply` path, so the player's client disables its own movement input; the NPC-AI suppression is null-guarded and no-ops on a player). `stunEntity` is the explicitly-named entry point for stunning an enemy player; `applyStun` / `applyStagger` keep their original names and behave identically on any entity. Enables PvP consumers (Kweebec Clash) to stun an opponent.
+
 ## [1.0.3] - 2026-06-18
 
 ### Fixed
