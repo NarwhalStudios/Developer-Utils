@@ -27,6 +27,18 @@ import com.narwhals.perfectutils.stun.StunMobUtil;
  * <p>Query methods ({@link #isStunned}, {@link #isFullStun}, {@link #getRemainingMs})
  * read the ECS component directly via {@link Store}, so they reflect the state
  * as of the current call (subject to the 1-tick application delay above).
+ *
+ * <p><b>Entity-neutral.</b> The stun pipeline is entity-agnostic: it freezes
+ * movement by pushing a stun {@code EntityEffect} (zero horizontal speed +
+ * {@code MovementEffects.DisableAll}) through the target's
+ * {@code EffectControllerComponent}, which a PLAYER carries just like a mob
+ * (the vanilla {@code /player effect apply} path), so the client disables its
+ * own movement input for the duration. The NPC-AI suppression
+ * ({@code CombatActionEvaluator} / {@code CombatSupport}) is null-guarded and
+ * simply no-ops on a player (a player has no NPC role). Use the
+ * {@code *Entity} methods below to stun an arbitrary entity (mob OR player);
+ * the {@code applyStun}/{@code applyStagger} methods are kept as the original
+ * names and behave identically on any entity.
  */
 public final class StunMobAPI {
 
@@ -94,6 +106,31 @@ public final class StunMobAPI {
             long durationMs, @Nullable Ref<EntityStore> sourceRef) {
         if (!targetRef.isValid() || durationMs <= 0) return;
         pending.add(new PendingRequest(RequestType.STAGGER, targetRef, durationMs, sourceRef, false));
+    }
+
+    /**
+     * Apply a full stun to ANY entity (mob or player). Entity-neutral alias of
+     * {@link #applyStun(Store, Ref, long, Ref)} with an explicit name for
+     * consumers that stun players: a player's client disables its own movement
+     * input for the duration via the stun {@code EntityEffect}; the NPC-AI
+     * suppression simply no-ops on a player. Realized within one world tick.
+     *
+     * @param targetRef  the entity to stun (mob or player)
+     * @param durationMs stun length in milliseconds; ignored if {@code <= 0}
+     * @param sourceRef  optional source/attacker entity (may be {@code null})
+     */
+    public void stunEntity(@Nonnull Store<EntityStore> store, @Nonnull Ref<EntityStore> targetRef,
+            long durationMs, @Nullable Ref<EntityStore> sourceRef) {
+        applyStun(store, targetRef, durationMs, sourceRef);
+    }
+
+    /**
+     * Convenience overload of {@link #stunEntity(Store, Ref, long, Ref)} with no
+     * source entity.
+     */
+    public void stunEntity(@Nonnull Store<EntityStore> store, @Nonnull Ref<EntityStore> targetRef,
+            long durationMs) {
+        applyStun(store, targetRef, durationMs, null);
     }
 
     /** Cancel an active stun early. No-ops if the entity is not stunned. */
