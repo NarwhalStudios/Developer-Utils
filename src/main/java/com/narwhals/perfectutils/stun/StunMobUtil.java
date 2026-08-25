@@ -234,9 +234,7 @@ public final class StunMobUtil {
             if (npcComponentType != null) {
                 NPCEntity npcEntity = commandBuffer.getComponent(entityRef, npcComponentType);
                 if (npcEntity != null) {
-                    CombatSupport combatSupport = npcEntity.getRole() != null
-                            ? npcEntity.getRole().getCombatSupport()
-                            : null;
+                    CombatSupport combatSupport = CombatSupport.get(entityRef, commandBuffer);
                     if (combatSupport != null) {
                         combatSupport.setExecutingAttack(null, false, stunDuration);
                     }
@@ -255,9 +253,7 @@ public final class StunMobUtil {
             if (npcComponentType != null) {
                 NPCEntity npcEntity = store.getComponent(entityRef, npcComponentType);
                 if (npcEntity != null) {
-                    CombatSupport combatSupport = npcEntity.getRole() != null
-                            ? npcEntity.getRole().getCombatSupport()
-                            : null;
+                    CombatSupport combatSupport = CombatSupport.get(entityRef, store);
                     if (combatSupport != null) {
                         combatSupport.setExecutingAttack(null, false, 0.0);
                     }

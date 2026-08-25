@@ -73,7 +73,7 @@ public final class AggroUtil {
         if (!playerRef.isValid()) return;
         Vector3d origin = readPosition(store, playerRef);
         forEachNpc(store, origin, radius, (npcRef, role, targetMemory) ->
-                wipePlayerFromMob(playerRef, role, targetMemory, false));
+                wipePlayerFromMob(npcRef, store, playerRef, targetMemory, false));
     }
 
     /**
@@ -87,7 +87,7 @@ public final class AggroUtil {
         if (!playerRef.isValid()) return;
         Vector3d origin = readPosition(store, playerRef);
         forEachNpc(store, origin, radius, (npcRef, role, targetMemory) ->
-                wipePlayerFromMob(playerRef, role, targetMemory, true));
+                wipePlayerFromMob(npcRef, store, playerRef, targetMemory, true));
     }
 
     /**
@@ -105,7 +105,7 @@ public final class AggroUtil {
 
         forEachNpc(store, origin, radius, (npcRef, role, targetMemory) -> {
             try {
-                MarkedEntitySupport markedSupport = role.getMarkedEntitySupport();
+                MarkedEntitySupport markedSupport = MarkedEntitySupport.get(npcRef, store);
                 Ref<EntityStore>[] targets = markedSupport.getEntityTargets();
                 for (int slot = 0; slot < targets.length; slot++) {
                     Ref<EntityStore> target = targets[slot];
@@ -114,7 +114,7 @@ public final class AggroUtil {
                     }
                 }
 
-                WorldSupport worldSupport = role.getWorldSupport();
+                WorldSupport worldSupport = WorldSupport.get(npcRef, store);
                 ensureAttitudeOverrideMemory(worldSupport);
                 worldSupport.overrideAttitude(tauntRef, Attitude.HOSTILE, 1.0);
 
@@ -127,12 +127,12 @@ public final class AggroUtil {
         });
     }
 
-    private static void wipePlayerFromMob(@Nonnull Ref<EntityStore> playerRef,
-            @Nonnull Role role, @Nullable TargetMemory targetMemory, boolean overrideIgnore) {
+    private static void wipePlayerFromMob(@Nonnull Ref<EntityStore> npcRef, @Nonnull Store<EntityStore> store,
+            @Nonnull Ref<EntityStore> playerRef, @Nullable TargetMemory targetMemory, boolean overrideIgnore) {
         try {
             int playerIndex = playerRef.getIndex();
 
-            MarkedEntitySupport markedSupport = role.getMarkedEntitySupport();
+            MarkedEntitySupport markedSupport = MarkedEntitySupport.get(npcRef, store);
             Ref<EntityStore>[] targets = markedSupport.getEntityTargets();
             for (int slot = 0; slot < targets.length; slot++) {
                 Ref<EntityStore> target = targets[slot];
@@ -142,7 +142,7 @@ public final class AggroUtil {
             }
 
             if (overrideIgnore) {
-                WorldSupport worldSupport = role.getWorldSupport();
+                WorldSupport worldSupport = WorldSupport.get(npcRef, store);
                 ensureAttitudeOverrideMemory(worldSupport);
                 worldSupport.overrideAttitude(playerRef, Attitude.IGNORE, 1.0);
             }
