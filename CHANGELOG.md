@@ -4,6 +4,15 @@ All notable changes to Perfect Utils are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-08-25
+
+### Changed
+
+- Hytale Update 6 (server `0.6.x`) compatibility. Update 6 moved an NPC's support objects off `Role` and onto per-call components reached through static `get(ref, accessor)` factories, so the `role.getX()` fetches no longer resolve.
+  - `AggroUtil` reads `MarkedEntitySupport.get(npcRef, store)` and `WorldSupport.get(npcRef, store)` per NPC instead of `role.getMarkedEntitySupport()` / `role.getWorldSupport()`. `wipePlayerFromMob` takes the NPC's own `Ref` + `Store` rather than a `Role`, so `dropAggro`, `suppress` and `taunt` all reach the support objects the same way.
+  - `StunMobUtil` reads `CombatSupport.get(entityRef, commandBuffer)` (apply) and `CombatSupport.get(entityRef, store)` (wake) instead of `npcEntity.getRole().getCombatSupport()`; the null-`Role` guard retires with it, and the result stays null-guarded before `setExecutingAttack`.
+- `manifest.json` declares `ServerVersion` `>=0.6.0 <0.7.0`, the Hytale Update 6 server line this release is built and tested against.
+
 ## [1.1.0] - 2026-06-20
 
 ### Added
@@ -59,6 +68,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Asset packs `DU_Entity_Stunned` / `DU_Entity_Staggered` (`HorizontalSpeedMultiplier: 0` + `MovementEffects.DisableAll: true`, 0.5s, re-applied per tick).
 - Public APIs take `Store<EntityStore>` only — requests queue on a `ConcurrentLinkedQueue` and drain on the next world tick (~1 tick / 50 ms latency at 20 TPS).
 
+[1.2.0]: https://github.com/narwhals/perfect-utils/releases/tag/v1.2.0
+[1.1.0]: https://github.com/narwhals/perfect-utils/releases/tag/v1.1.0
 [1.0.3]: https://github.com/narwhals/perfect-utils/releases/tag/v1.0.3
 [1.0.2]: https://github.com/narwhals/perfect-utils/releases/tag/v1.0.2
 [1.0.1]: https://github.com/narwhals/perfect-utils/releases/tag/v1.0.1
