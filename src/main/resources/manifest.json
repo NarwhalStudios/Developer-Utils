@@ -1,7 +1,7 @@
 {
     "Group": "narwhals",
     "Name": "Perfect Utils",
-    "Version": "1.2.0",
+    "Version": "1.3.0",
     "Description": "${mod_description}",
     "Authors": [
         {
@@ -13,7 +13,7 @@
         }
     ],
     "Website": "",
-    "ServerVersion": ">=0.6.0 <0.7.0",
+    "ServerVersion": ">=0.7.0-pre.0 <0.8.0",
     "Dependencies": {
         
     },
