@@ -1,0 +1,3 @@
+# The build's updatePluginManifest task rewrites manifest.json with LF endings on every
+# processResources, so git expects LF there and a build no longer leaves the file dirty.
+src/main/resources/manifest.json text eol=lf
