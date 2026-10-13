@@ -7,6 +7,85 @@ The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - Unreleased
+
+### Fixed
+
+- Stuns and taunts aimed at an entity in one world no longer get lost while
+  another world is running. Every world drained one shared request queue
+  with its own store, so whichever world ticked first took the requests
+  meant for the others, failed the store's reference check
+  (`Incorrect store for entity reference`), logged a warning and dropped
+  them. Each world now takes only the requests whose target lives in it and
+  leaves the rest queued for their own world; a request whose target is gone
+  everywhere is dropped. Kweebec Nightmare's Moonbloom stuns and hunter
+  taunts in a round's world land every time, even with players in the
+  overworld or a second round running.
+- The once-per-tick drain gate and the stun's per-tick bookkeeping are kept
+  per world (a store resource each world's thread reads alone) instead of in
+  fields every world's thread shared.
+- `EffectUtil`'s effect cache is safe to read from every world's thread, and
+  a lookup that finds no effect is no longer cached, so an effect missing at
+  the first lookup is picked up once it loads.
+- The mod list showed Perfect Utils' description as the literal
+  `${mod_description}`. The build now writes `mod_description` from
+  `gradle.properties` into `manifest.json`.
+
+### Changed
+
+- The build compiles against the release server line (`patchline=release`)
+  instead of the pre-release one.
+- `check` (and so `build`) runs the family's deprecation gate,
+  `gradle/deprecation-gate.gradle`: it fails on any call to a deprecated API
+  not marked `// DEPRECATION-KEPT: <why>`. Perfect Utils calls none.
+
+## [1.3.0] - 2026-10-12
+
+### Changed
+
+- Hytale Update 7 (server `0.7.x`) compatibility. `manifest.json` declares
+  `ServerVersion` `>=0.7.0-pre.0 <0.8.0`, the Update 7 line this release is
+  built and tested against. No code change: the classes are byte-identical to
+  1.2.0's, and every engine reference resolves on 0.7.0.
+
+## [1.2.0] - 2026-08-25
+
+### Changed
+
+- Hytale Update 6 (server `0.6.x`) compatibility. Update 6 moved an NPC's
+  support objects off `Role` and onto per-call components reached through
+  static `get(ref, accessor)` factories, so the `role.getX()` fetches no
+  longer resolve.
+  - `AggroUtil` reads `MarkedEntitySupport.get(npcRef, store)` and
+    `WorldSupport.get(npcRef, store)` per NPC instead of
+    `role.getMarkedEntitySupport()` / `role.getWorldSupport()`.
+    `wipePlayerFromMob` takes the NPC's own `Ref` + `Store` rather than a
+    `Role`, so `dropAggro`, `suppress` and `taunt` all reach the support
+    objects the same way.
+  - `StunMobUtil` reads `CombatSupport.get(entityRef, commandBuffer)` (apply)
+    and `CombatSupport.get(entityRef, store)` (wake) instead of
+    `npcEntity.getRole().getCombatSupport()`; the null-`Role` guard retires
+    with it, and the result stays null-guarded before `setExecutingAttack`.
+- `manifest.json` declares `ServerVersion` `>=0.6.0 <0.7.0`, the Hytale
+  Update 6 server line this release is built and tested against.
+
+## [1.1.0] - 2026-06-20
+
+### Added
+
+- `StunMobAPI.stunEntity(store, target, durationMs, source)` and the
+  no-source overload `stunEntity(store, target, durationMs)`: entity-neutral
+  entry points that stun ANY entity, mob OR player. The stun pipeline was
+  already entity-agnostic (movement is frozen by pushing a stun
+  `EntityEffect` of zero horizontal speed + `MovementEffects.DisableAll`
+  through the target's `EffectControllerComponent`, which a player carries
+  just like a mob via the vanilla `/player effect apply` path, so the
+  player's client disables its own movement input; the NPC-AI suppression is
+  null-guarded and no-ops on a player). `stunEntity` is the explicitly-named
+  entry point for stunning an enemy player; `applyStun` / `applyStagger` keep
+  their original names and behave identically on any entity. Enables PvP
+  consumers (Kweebec Clash) to stun an opponent.
+
 ## [1.0.3] - 2026-06-18
 
 ### Fixed
@@ -51,52 +130,52 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   absent. Set `hytaleHome` to your install root (for example
   `D:/Games/Hytale`) to build against a non-default Hytale install.
 
-## [1.0.1] — 2026-04-27
+## [1.0.1] - 2026-04-27
 
 ### Added
 
-- `AggroAPI` — mob aggro / taunt controller, ported from Zephyr's
+- `AggroAPI`: mob aggro / taunt controller, ported from Zephyr's
   `KunaiVanishTickSystem`.
-  - `dropAggro(store, playerRef, radius)` — one-shot targeting reset
+  - `dropAggro(store, playerRef, radius)`: one-shot targeting reset
     within `radius`.
-  - `suppress(store, playerRef, durationMs, radius)` — sustained
+  - `suppress(store, playerRef, durationMs, radius)`: sustained
     `Attitude.IGNORE` window.
-  - `taunt(store, tauntRef, durationMs, radius)` — pin nearby mobs to the
+  - `taunt(store, tauntRef, durationMs, radius)`: pin nearby mobs to the
     taunter.
   - `clear`, `isSuppressed`, `isTaunting`, `getRemainingMs` queries.
-- `AggroComponent`, `AggroTickSystem`, `AggroQueueDrainSystem` — per-player
+- `AggroComponent`, `AggroTickSystem`, `AggroQueueDrainSystem`: per-player
   ECS state, swept once per tick. Drain stages components only; the tick
   system owns all `forEachChunk(NPCEntity, ...)` work to avoid
   nested-iteration errors on the store.
-- `AggroUtil` — static helpers (`resetTargetingNearby`, `suppressTargeting`,
+- `AggroUtil`: static helpers (`resetTargetingNearby`, `suppressTargeting`,
   `redirectAggro`) using `MarkedEntitySupport` +
   `WorldSupport.overrideAttitude` + `TargetMemory.knownHostiles`.
 - `radius <= 0` iterates every NPC in the world (Zephyr-style true
   invisibility); positive values bound the sweep with a squared-distance
   filter against `TransformComponent`.
 
-## [1.0.0] — 2026-04-26
+## [1.0.0] - 2026-04-26
 
 ### Added
 
 - Initial release.
-- `StunMobAPI` — mob stun primitive lifted from Perfect Parries.
-  - `applyStun(store, target, durationMs, source)` — full stun: movement
-    freeze + AI suppression + interaction lock.
-  - `applyStagger(store, target, durationMs, source)` — lighter stagger;
+- `StunMobAPI`: mob stun primitive lifted from Perfect Parries.
+  - `applyStun(store, target, durationMs, source)`: full stun (movement
+    freeze + AI suppression + interaction lock).
+  - `applyStagger(store, target, durationMs, source)`: lighter stagger;
     won't downgrade an active full stun.
-  - `wakeUp(store, target)` — cancel an active stun early.
+  - `wakeUp(store, target)`: cancel an active stun early.
   - `isStunned`, `isFullStun`, `getRemainingMs` queries.
-- `StunComponent`, `StunSystem`, `StunQueueDrainSystem`, `StunMobUtil` —
+- `StunComponent`, `StunSystem`, `StunQueueDrainSystem`, `StunMobUtil`:
   per-entity ECS state, drained per-tick, with re-application each frame
   to outlast Hytale's short effect expiry.
-- `StunConstants` — `STUN_END_THRESHOLD_SECONDS = 0.025f`,
+- `StunConstants`: `STUN_END_THRESHOLD_SECONDS = 0.025f`,
   `STUN_WAKE_DELAY_MS = 250`, `STAGGER_WAKE_DELAY_MS = 100`.
-- `EffectUtil` — minimal `EntityEffect` lookup + apply, lifted from Perfect
+- `EffectUtil`: minimal `EntityEffect` lookup + apply, lifted from Perfect
   Parries.
 - Asset packs `DU_Entity_Stunned` / `DU_Entity_Staggered`
   (`HorizontalSpeedMultiplier: 0` + `MovementEffects.DisableAll: true`,
   0.5 s, re-applied per tick).
-- Public APIs take `Store<EntityStore>` only — requests queue on a
+- Public APIs take `Store<EntityStore>` only: requests queue on a
   `ConcurrentLinkedQueue` and drain on the next world tick (~1 tick / 50 ms
   latency at 20 TPS).

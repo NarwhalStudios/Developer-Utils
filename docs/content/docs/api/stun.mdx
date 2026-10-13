@@ -5,8 +5,13 @@ description: Freeze a mob's movement, suppress its combat AI, and lock its inter
 
 Two flavors:
 
-- `applyStun` — full stun (movement freeze + AI suppression + interaction lock).
-- `applyStagger` — lighter stagger; never downgrades an active full stun.
+- `applyStun`: full stun (movement freeze + AI suppression + interaction lock).
+- `applyStagger`: lighter stagger; never downgrades an active full stun.
+
+`stunEntity` (since 1.1.0) is the full stun under a name that says it works
+on any entity, players included: the stun effect freezes a player's movement
+just like a mob's, and the AI suppression does nothing on a player. Use it
+to stun an opponent in a PvP mod.
 
 State lives on a per-entity `StunComponent`; `StunSystem` re-applies the
 entity effect each tick because Hytale effects expire after 0.5 s.
@@ -17,13 +22,15 @@ entity effect each tick because Hytale effects expire after 0.5 s.
 | --- | --- |
 | `applyStun(store, target, durationMs, source)` | Full stun. |
 | `applyStagger(store, target, durationMs, source)` | Stagger. Won't downgrade a full stun. |
+| `stunEntity(store, target, durationMs, source)` | Full stun on any entity, mob or player. Same as `applyStun`. |
+| `stunEntity(store, target, durationMs)` | The same, with no source. |
 | `wakeUp(store, target)` | Cancel an active stun early. |
 | `isStunned(store, target)` | True while stun or stagger is active. |
 | `isFullStun(store, target)` | True only for full stuns. |
 | `getRemainingMs(store, target)` | Remaining duration in ms. |
 
 `store` is `Store<EntityStore>`; `target` and `source` are
-`Ref<EntityStore>`. `source` is optional attribution — pass `null` if you
+`Ref<EntityStore>`. `source` is optional attribution: pass `null` if you
 have no attacker to credit.
 
 ## Constants
@@ -38,13 +45,15 @@ From `com.narwhals.perfectutils.stun.StunConstants`:
 | `STUN_EFFECT_ASSET` | `"DU_Entity_Stunned"` | Asset id for full-stun effect. |
 | `STAGGER_EFFECT_ASSET` | `"DU_Entity_Staggered"` | Asset id for stagger effect. |
 
-Latency: ~1 tick (~50 ms at 20 TPS).
+Latency: ~1 tick (~50 ms at 20 TPS) of the world the target is in. Each
+world applies only the stuns aimed at its own entities, on its own tick.
 
 ## Example
 
 ```java
 applyStun.invoke(api, store, mobRef, 2000L, attackerRef);
 applyStagger.invoke(api, store, mobRef, 300L, attackerRef);
+stunEntity.invoke(api, store, playerRef, 1500L);
 wakeUp.invoke(api, store, mobRef);
 ```
 

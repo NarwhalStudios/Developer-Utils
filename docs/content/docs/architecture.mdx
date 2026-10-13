@@ -14,7 +14,8 @@ drain system materializes them during a world tick.
 | `api/StunMobAPI` | Public singleton. Methods enqueue `PendingRequest`s. |
 | `stun/StunComponent` | Per-entity state (`timeRemaining`, `stunType`, `wakingUp`). |
 | `stun/StunSystem` | Drains duration, re-applies the entity effect every tick (Hytale effects expire fast), wakes the mob when remaining ≤ `STUN_END_THRESHOLD_SECONDS`. |
-| `stun/StunQueueDrainSystem` | Drains the pending queue once per tick. |
+| `stun/StunQueueDrainSystem` | Drains the pending queue once per tick, for the world's own targets. |
+| `stun/StunStoreState` | Per-world store resource: the drain gate and the per-tick dedup of component adds. |
 | `stun/StunMobUtil` | `CommandBuffer`-side work: component add, entity-effect apply, `InteractionManager.clear()`, AI suppression, scheduled wake reset. |
 
 ## Aggro module
@@ -25,7 +26,8 @@ drain system materializes them during a world tick.
 | `aggro/AggroComponent` | Per-player state. Mode `{ONE_SHOT, SUSTAINED_IGNORE, TAUNT}`, `deadlineMs`, `radius`. |
 | `aggro/AggroTickSystem` | Per mode: ONE_SHOT runs `resetTargetingNearby` once and removes itself; the others re-run every tick until the deadline. |
 | `aggro/AggroUtil` | `resetTargetingNearby`, `suppressTargeting`, `redirectAggro` against `MarkedEntitySupport` + `WorldSupport.overrideAttitude` + `TargetMemory.knownHostiles`. |
-| `aggro/AggroQueueDrainSystem` | Drains the pending queue. **Stages components only** — does not call `AggroUtil` directly. |
+| `aggro/AggroQueueDrainSystem` | Drains the pending queue, for the world's own targets. **Stages components only**: it does not call `AggroUtil` directly. |
+| `aggro/AggroStoreState` | Per-world store resource: the drain gate. |
 
 ## Why the queue + drain pattern
 
@@ -35,29 +37,40 @@ available inside a system tick. Plugins calling `applyStun` / `dropAggro` /
 So the public APIs stay `Store`-only and defer ECS work to the next tick
 via the `*QueueDrainSystem`.
 
-A `lastDrainMs` gate ensures the queue drains exactly once per tick.
+Each queue is shared by every world, and each world ticks the drain system
+on its own thread with its own store. So a drain takes only the requests
+whose target lives in its world (`ref.getStore() == store`) and leaves the
+rest queued for their own world: a target from another world would fail the
+store's reference check and the request would be lost. A request whose
+target is gone everywhere is dropped, so the queue only holds requests for
+entities that still exist. A world drains only while a player is in it, so a
+request for an entity in an empty world waits for a player to arrive.
+
+A per-world `lastDrainMs` gate (in the world's `*StoreState` resource, never
+a field every world shares) ensures each world drains exactly once per tick,
+however many players it has.
 
 <Callout type="warn" title="Don't consolidate the two drain systems">
 `ComponentRegistryProxy.registerSystem` keys by `Class`, so two instances of
 the same drain class collide. Adding a new drainable API means a new
-`*QueueDrainSystem` subclass — ~30 lines of pass-through.
+`*QueueDrainSystem` subclass, about 30 lines of pass-through.
 </Callout>
 
 ## Why the tick system owns all sweeps
 
 Calling `store.forEachChunk(NPCEntity, ...)` from inside
-`AggroQueueDrainSystem.tick` throws `Store is currently processing!` —
+`AggroQueueDrainSystem.tick` throws `Store is currently processing!`:
 Hytale's Store disallows nested chunk iteration when the outer query is on
 a core type like `PlayerRef`.
 
 `AggroTickSystem` queries `AggroComponent` (a custom marker), and from
-there `forEachChunk(NPCEntity, ...)` is safe — same shape as Zephyr's
-`KunaiVanishTickSystem`. So:
+there `forEachChunk(NPCEntity, ...)` is safe (the same shape as Zephyr's
+`KunaiVanishTickSystem`). So:
 
 - **Drain stages components.** No `AggroUtil` calls from drain.
 - **Tick system runs all sweeps.** Even one-shot drops add a 1-tick
   component that `AggroTickSystem` processes.
 
 Worst-case latency: 1–2 ticks (~50–100 ms at 20 TPS). Stun doesn't have
-this constraint — `StunMobUtil.applyStun` mutates a single mob, so it can
+this constraint: `StunMobUtil.applyStun` mutates a single mob, so it can
 be called from `StunQueueDrainSystem.tick` directly.

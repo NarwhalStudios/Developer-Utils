@@ -5,9 +5,9 @@ description: Reflective lookup (recommended) and Gradle compile dependency (disc
 
 Two ways to call Perfect Utils' APIs from another mod:
 
-- **Gradle compile dependency** — simple, but breaks consumers when Perfect
+- **Gradle compile dependency**: simple, but breaks consumers when Perfect
   Utils isn't installed and runs into Hytale's plugin classloader isolation.
-- **Reflective lookup at runtime** *(recommended)* — your mod loads cleanly
+- **Reflective lookup at runtime** *(recommended)*: your mod loads cleanly
   either way and degrades to a no-op when Perfect Utils is missing.
 
 ## Hard dependency (discouraged)
@@ -16,8 +16,8 @@ Two ways to call Perfect Utils' APIs from another mod:
 Hytale's plugin loader gives each mod its own classloader, so a direct
 compile-time reference can fail to resolve at load time even when Perfect
 Utils is installed. And if it isn't installed at all, the consumer mod fails
-to load — no graceful degradation. Fine for sibling-repo dev where both jars
-are always present; not for published mods.
+to load, with no graceful degradation. Fine for sibling-repo dev where both
+jars are always present; not for published mods.
 </Callout>
 
 The jar is published on
@@ -26,7 +26,7 @@ into a `libs/` folder in your mod:
 
 ```groovy
 dependencies {
-    compileOnly files("libs/Perfect Utils-1.0.3.jar")
+    compileOnly files("libs/Perfect Utils-1.3.1.jar")
 }
 ```
 
@@ -70,5 +70,6 @@ Method taunt     = aggroClass.getMethod("taunt",     Store.class, Ref.class, lon
 applyStun.invoke(api, store, mobRef, 2000L, attackerRef);
 ```
 
-All apply/wake calls take `Store<EntityStore>` only — no `CommandBuffer`
-needed. Requests queue and drain on the next world tick.
+All apply/wake calls take `Store<EntityStore>` only, no `CommandBuffer`
+needed. Requests queue and drain on the next tick of the world the target is
+in.

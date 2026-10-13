@@ -6,10 +6,10 @@ description: Mob aggro / taunt controller. Drop, suppress, or redirect.
 Three modes against the same in-mod state, ported from Zephyr's
 `KunaiVanishTickSystem`:
 
-- `dropAggro` — one-shot. Clears current targeting + wipes the player from
+- `dropAggro`: one-shot. Clears current targeting + wipes the player from
   nearby `TargetMemory`. Mobs may re-acquire on the next AI tick.
-- `suppress` — sustained `Attitude.IGNORE` window for `durationMs`.
-- `taunt` — pin nearby mobs to the taunter for `durationMs` via
+- `suppress`: sustained `Attitude.IGNORE` window for `durationMs`.
+- `taunt`: pin nearby mobs to the taunter for `durationMs` via
   `closestHostile` + `Attitude.HOSTILE` override.
 
 ## Methods
@@ -29,15 +29,16 @@ Three modes against the same in-mod state, ported from Zephyr's
 
 ## Radius
 
-- `radius > 0` — squared-distance filter against `TransformComponent`.
-- `radius <= 0` — every NPC in the world (Zephyr-style true invisibility).
+- `radius > 0`: squared-distance filter against `TransformComponent`.
+- `radius <= 0`: every NPC in the world (Zephyr-style true invisibility).
   Use with care.
 
-If a window is already active for the player, the most recent request wins
-— `mode`, `deadlineMs`, and `radius` are overwritten in place.
+If a window is already active for the player, the most recent request wins:
+`mode`, `deadlineMs`, and `radius` are overwritten in place.
 
-Latency: 1–2 ticks (~50–100 ms at 20 TPS), because drain stages the
-component and `AggroTickSystem` runs the sweep on the following tick. See
+Latency: 1–2 ticks (~50–100 ms at 20 TPS) of the player's world, because
+drain stages the component and `AggroTickSystem` runs the sweep on the
+following tick. Each world handles only the requests for its own players. See
 [Architecture](/docs/architecture#why-the-tick-system-owns-all-sweeps).
 
 ## Example

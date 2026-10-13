@@ -12,7 +12,7 @@ export default function HomePage() {
         </h1>
         <p className="mt-6 text-lg sm:text-xl text-fd-muted-foreground max-w-2xl">
           Reusable gameplay primitives for Hytale mods. Stun a mob, drop your
-          aggro, taunt a pack — from a single line of code, with no
+          aggro, taunt a pack, all from a single line of code, with no
           <code className="mx-1 px-1.5 py-0.5 rounded bg-fd-muted text-sm">CommandBuffer</code>
           plumbing.
         </p>
@@ -52,7 +52,7 @@ export default function HomePage() {
           Built to be a soft dependency
         </h2>
         <p className="mt-4 text-fd-muted-foreground">
-          Consume it reflectively from your own mod — no compile-time dependency,
+          Consume it reflectively from your own mod: no compile-time dependency,
           no classloader pain. When Perfect Utils isn't installed, every call
           becomes a silent no-op and your mod still loads cleanly.
         </p>

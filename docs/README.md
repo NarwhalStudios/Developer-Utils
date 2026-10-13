@@ -1,4 +1,4 @@
-# Perfect Utils — documentation site
+# Perfect Utils documentation site
 
 Next.js + [Fumadocs](https://fumadocs.dev) site for the Perfect Utils mod.
 Lives at `/docs` in the repo so the Java/Gradle build at the root is
@@ -26,7 +26,7 @@ npm run types:check  # tsc --noEmit
 | `content/docs/api/meta.json`| Sidebar order inside the API Reference group.          |
 | `lib/shared.ts`             | App name + GitHub coords. Edit if the repo moves.      |
 | `lib/source.ts`             | Wires `source.config.ts` into the Fumadocs `loader()`. |
-| `source.config.ts`          | Fumadocs MDX config — frontmatter schema, etc.         |
+| `source.config.ts`          | Fumadocs MDX config: frontmatter schema, etc.          |
 
 ## Editing content
 

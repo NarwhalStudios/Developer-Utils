@@ -6,8 +6,9 @@ description: JDK 25, a local Hytale install, and Gradle.
 ## Requirements
 
 - **JDK 25** (per `gradle.properties`).
-- **A local Hytale install via the official launcher** — the build references
-  `HytaleServer.jar` from there.
+- **A local Hytale install via the official launcher.** The build references
+  `HytaleServer.jar` from there, from the `patchline` set in
+  `gradle.properties` (`release`).
   - Windows: `%APPDATA%\Hytale`
   - macOS: `~/Library/Application Support/Hytale`
   - Linux: `~/.config/Hytale`
@@ -26,9 +27,10 @@ hytaleHome=D:/Games/Hytale
 
 `build.gradle` reads `hytaleHome` from this file when present and otherwise
 falls back to the launcher default above. `local.properties` is gitignored,
-so each machine keeps its own path. Build against the matching server version:
-Hytale Update 5 (server `0.5.x`) is required from 1.0.2 onward, since Update 5
-moved the math vector types to JOML.
+so each machine keeps its own path. Build against the server line the
+manifest's `ServerVersion` names: Hytale Update 7 (server `0.7.x`) from 1.3.0,
+Update 6 (`0.6.x`) for 1.2.0, and Update 5 (`0.5.x`) for 1.0.2 to 1.1.0. A jar
+built against one update won't load on another.
 
 ## Build
 
@@ -42,4 +44,8 @@ On Windows, invoke Gradle through PowerShell:
 powershell -Command "cd 'D:\path\to\Developer-Utils'; & .\gradlew.bat build 2>&1"
 ```
 
-Output: `build/libs/Perfect Utils-1.0.3.jar`.
+Output: `build/libs/Perfect Utils-1.3.1.jar`.
+
+`build` also runs the deprecation gate (`gradle/deprecation-gate.gradle`),
+which fails on any call to a deprecated Hytale API not marked
+`// DEPRECATION-KEPT: <why>`.
