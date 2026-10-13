@@ -4,6 +4,20 @@ All notable changes to Perfect Utils are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - Unreleased
+
+### Fixed
+
+- Stuns and taunts aimed at an entity in one world no longer get lost while another world is running. Every world drained one shared request queue with its own store, so whichever world ticked first took the requests meant for the others, failed the store's reference check (`Incorrect store for entity reference`), logged a warning and dropped them. Each world now takes only the requests whose target lives in it and leaves the rest queued for their own world; a request whose target is gone everywhere is dropped. Kweebec Nightmare's Moonbloom stuns and hunter taunts in a round's world land every time, even with players in the overworld or a second round running.
+- The once-per-tick drain gate and the stun's per-tick bookkeeping are kept per world (a store resource each world's thread reads alone) instead of in fields every world's thread shared.
+- `EffectUtil`'s effect cache is safe to read from every world's thread, and a lookup that finds no effect is no longer cached, so an effect missing at the first lookup is picked up once it loads.
+- The mod list showed Perfect Utils' description as the literal `${mod_description}`. The build now writes `mod_description` from `gradle.properties` into `manifest.json`.
+
+### Changed
+
+- The build compiles against the release server line (`patchline=release`) instead of the pre-release one.
+- `check` (and so `build`) runs the family's deprecation gate, `gradle/deprecation-gate.gradle`: it fails on any call to a deprecated API not marked `// DEPRECATION-KEPT: <why>`. Perfect Utils calls none.
+
 ## [1.3.0] - 2026-10-12
 
 ### Changed
@@ -49,13 +63,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- `AggroAPI` — mob aggro / taunt controller, ported from Zephyr's `KunaiVanishTickSystem`.
-  - `dropAggro(store, playerRef, radius)` — one-shot targeting reset within `radius`.
-  - `suppress(store, playerRef, durationMs, radius)` — sustained `Attitude.IGNORE` window.
-  - `taunt(store, tauntRef, durationMs, radius)` — pin nearby mobs to the taunter.
+- `AggroAPI`: mob aggro / taunt controller, ported from Zephyr's `KunaiVanishTickSystem`.
+  - `dropAggro(store, playerRef, radius)`: one-shot targeting reset within `radius`.
+  - `suppress(store, playerRef, durationMs, radius)`: sustained `Attitude.IGNORE` window.
+  - `taunt(store, tauntRef, durationMs, radius)`: pin nearby mobs to the taunter.
   - `clear`, `isSuppressed`, `isTaunting`, `getRemainingMs` queries.
-- `AggroComponent`, `AggroTickSystem`, `AggroQueueDrainSystem` — per-player ECS state, swept once per tick. Drain stages components only; the tick system owns all `forEachChunk(NPCEntity, ...)` work to avoid nested-iteration errors on the store.
-- `AggroUtil` — static helpers (`resetTargetingNearby`, `suppressTargeting`, `redirectAggro`) using `MarkedEntitySupport` + `WorldSupport.overrideAttitude` + `TargetMemory.knownHostiles`.
+- `AggroComponent`, `AggroTickSystem`, `AggroQueueDrainSystem`: per-player ECS state, swept once per tick. Drain stages components only; the tick system owns all `forEachChunk(NPCEntity, ...)` work to avoid nested-iteration errors on the store.
+- `AggroUtil`: static helpers (`resetTargetingNearby`, `suppressTargeting`, `redirectAggro`) using `MarkedEntitySupport` + `WorldSupport.overrideAttitude` + `TargetMemory.knownHostiles`.
 - `radius <= 0` iterates every NPC in the world (Zephyr-style true invisibility); positive values bound the sweep with a squared-distance filter against `TransformComponent`.
 
 ## [1.0.0] - 2026-04-26
@@ -63,17 +77,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 
 - Initial release.
-- `StunMobAPI` — mob stun primitive lifted from Perfect Parries.
-  - `applyStun(store, target, durationMs, source)` — full stun: movement freeze + AI suppression + interaction lock.
-  - `applyStagger(store, target, durationMs, source)` — lighter stagger; won't downgrade an active full stun.
-  - `wakeUp(store, target)` — cancel an active stun early.
+- `StunMobAPI`: mob stun primitive lifted from Perfect Parries.
+  - `applyStun(store, target, durationMs, source)`: full stun (movement freeze + AI suppression + interaction lock).
+  - `applyStagger(store, target, durationMs, source)`: lighter stagger; won't downgrade an active full stun.
+  - `wakeUp(store, target)`: cancel an active stun early.
   - `isStunned`, `isFullStun`, `getRemainingMs` queries.
-- `StunComponent`, `StunSystem`, `StunQueueDrainSystem`, `StunMobUtil` — per-entity ECS state, drained per-tick, with re-application each frame to outlast Hytale's short effect expiry.
-- `StunConstants` — `STUN_END_THRESHOLD_SECONDS = 0.025f`, `STUN_WAKE_DELAY_MS = 250`, `STAGGER_WAKE_DELAY_MS = 100`.
-- `EffectUtil` — minimal `EntityEffect` lookup + apply, lifted from Perfect Parries.
+- `StunComponent`, `StunSystem`, `StunQueueDrainSystem`, `StunMobUtil`: per-entity ECS state, drained per-tick, with re-application each frame to outlast Hytale's short effect expiry.
+- `StunConstants`: `STUN_END_THRESHOLD_SECONDS = 0.025f`, `STUN_WAKE_DELAY_MS = 250`, `STAGGER_WAKE_DELAY_MS = 100`.
+- `EffectUtil`: minimal `EntityEffect` lookup + apply, lifted from Perfect Parries.
 - Asset packs `DU_Entity_Stunned` / `DU_Entity_Staggered` (`HorizontalSpeedMultiplier: 0` + `MovementEffects.DisableAll: true`, 0.5s, re-applied per tick).
-- Public APIs take `Store<EntityStore>` only — requests queue on a `ConcurrentLinkedQueue` and drain on the next world tick (~1 tick / 50 ms latency at 20 TPS).
+- Public APIs take `Store<EntityStore>` only: requests queue on a `ConcurrentLinkedQueue` and drain on the next world tick (~1 tick / 50 ms latency at 20 TPS).
 
+[1.3.1]: https://github.com/narwhals/perfect-utils/releases/tag/v1.3.1
+[1.3.0]: https://github.com/narwhals/perfect-utils/releases/tag/v1.3.0
 [1.2.0]: https://github.com/narwhals/perfect-utils/releases/tag/v1.2.0
 [1.1.0]: https://github.com/narwhals/perfect-utils/releases/tag/v1.1.0
 [1.0.3]: https://github.com/narwhals/perfect-utils/releases/tag/v1.0.3
