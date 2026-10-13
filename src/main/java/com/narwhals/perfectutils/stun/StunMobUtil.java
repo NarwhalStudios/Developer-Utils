@@ -1,7 +1,5 @@
 package com.narwhals.perfectutils.stun;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
@@ -10,6 +8,7 @@ import com.hypixel.hytale.builtin.npccombatactionevaluator.evaluator.CombatActio
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.ResourceType;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.protocol.AnimationSlot;
@@ -43,14 +42,32 @@ public final class StunMobUtil {
 
     private static ComponentType<EntityStore, StunComponent> stunComponentType;
 
-    /** Per-tick dedup map — multiple apply requests in the same tick collapse to one. */
-    private static final Map<Ref<EntityStore>, Long> pendingStunAdditions = new HashMap<>();
-    private static long lastTickTime = -1;
+    /**
+     * Each world's {@link StunStoreState}, which holds the per-tick dedup of component additions:
+     * several apply requests for one entity in one tick add the component once. Per world, because
+     * every world ticks on its own thread.
+     */
+    private static ResourceType<EntityStore, StunStoreState> storeStateType;
 
     private StunMobUtil() {}
 
     public static void init(ComponentType<EntityStore, StunComponent> componentType) {
         stunComponentType = componentType;
+    }
+
+    public static void initStoreState(ResourceType<EntityStore, StunStoreState> stateType) {
+        storeStateType = stateType;
+    }
+
+    /**
+     * Records that {@code entityRef} gets a stun component in this world this tick.
+     *
+     * @return {@code false} if it already got one this tick, so the caller must not add a second
+     */
+    private static boolean markAddition(Ref<EntityStore> entityRef, Store<EntityStore> store, long nowMs) {
+        if (storeStateType == null) return true;
+        StunStoreState state = store.getResource(storeStateType);
+        return state == null || state.markAddition(entityRef, nowMs);
     }
 
     public static void applyStun(Ref<EntityStore> entityRef, Store<EntityStore> store,
@@ -64,11 +81,6 @@ public final class StunMobUtil {
 
         float durationSeconds = durationMs / 1000f;
 
-        if (nowMs != lastTickTime) {
-            pendingStunAdditions.clear();
-            lastTickTime = nowMs;
-        }
-
         StunComponent existing = store.getComponent(entityRef, stunComponentType);
         if (existing != null) {
             existing.setTimeRemaining(durationSeconds);
@@ -77,8 +89,7 @@ public final class StunMobUtil {
             return;
         }
 
-        if (pendingStunAdditions.containsKey(entityRef)) return;
-        pendingStunAdditions.put(entityRef, nowMs);
+        if (!markAddition(entityRef, store, nowMs)) return;
 
         applyEffect(entityRef, store, commandBuffer, durationSeconds, true);
         setInteractionLock(entityRef, commandBuffer, durationSeconds, true);
@@ -94,11 +105,6 @@ public final class StunMobUtil {
 
         float durationSeconds = durationMs / 1000f;
 
-        if (nowMs != lastTickTime) {
-            pendingStunAdditions.clear();
-            lastTickTime = nowMs;
-        }
-
         StunComponent existing = store.getComponent(entityRef, stunComponentType);
         if (existing != null) {
             if (existing.isStagger() && durationSeconds > existing.getTimeRemaining()) {
@@ -109,8 +115,7 @@ public final class StunMobUtil {
             return;
         }
 
-        if (pendingStunAdditions.containsKey(entityRef)) return;
-        pendingStunAdditions.put(entityRef, nowMs);
+        if (!markAddition(entityRef, store, nowMs)) return;
 
         applyEffect(entityRef, store, commandBuffer, durationSeconds, false);
         setInteractionLock(entityRef, commandBuffer, durationSeconds, true);

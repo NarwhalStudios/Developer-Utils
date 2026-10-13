@@ -4,18 +4,21 @@ import javax.annotation.Nonnull;
 
 import com.hypixel.hytale.component.ComponentRegistryProxy;
 import com.hypixel.hytale.component.ComponentType;
+import com.hypixel.hytale.component.ResourceType;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.narwhals.perfectutils.aggro.AggroComponent;
 import com.narwhals.perfectutils.aggro.AggroQueueDrainSystem;
+import com.narwhals.perfectutils.aggro.AggroStoreState;
 import com.narwhals.perfectutils.aggro.AggroTickSystem;
 import com.narwhals.perfectutils.api.AggroAPI;
 import com.narwhals.perfectutils.api.StunMobAPI;
 import com.narwhals.perfectutils.stun.StunComponent;
 import com.narwhals.perfectutils.stun.StunMobUtil;
 import com.narwhals.perfectutils.stun.StunQueueDrainSystem;
+import com.narwhals.perfectutils.stun.StunStoreState;
 import com.narwhals.perfectutils.stun.StunSystem;
 
 /**
@@ -39,6 +42,8 @@ public class PerfectUtilsPlugin extends JavaPlugin {
 
     private ComponentType<EntityStore, StunComponent> stunComponentType;
     private ComponentType<EntityStore, AggroComponent> aggroComponentType;
+    private ResourceType<EntityStore, StunStoreState> stunStoreStateType;
+    private ResourceType<EntityStore, AggroStoreState> aggroStoreStateType;
 
     public PerfectUtilsPlugin(@Nonnull JavaPluginInit init) {
         super(init);
@@ -83,14 +88,19 @@ public class PerfectUtilsPlugin extends JavaPlugin {
         ComponentRegistryProxy<EntityStore> registry = this.getEntityStoreRegistry();
         stunComponentType = registry.registerComponent(StunComponent.class, StunComponent::new);
         aggroComponentType = registry.registerComponent(AggroComponent.class, AggroComponent::new);
+        // Per-world bookkeeping (drain gate, per-tick dedup): every world ticks on its own thread,
+        // so this state lives in each world's store rather than in shared fields.
+        stunStoreStateType = registry.registerResource(StunStoreState.class, StunStoreState::new);
+        aggroStoreStateType = registry.registerResource(AggroStoreState.class, AggroStoreState::new);
         StunMobUtil.init(stunComponentType);
+        StunMobUtil.initStoreState(stunStoreStateType);
     }
 
     private void initSystems() {
         ComponentRegistryProxy<EntityStore> registry = this.getEntityStoreRegistry();
         registry.registerSystem(new StunSystem(stunComponentType));
         registry.registerSystem(new AggroTickSystem(aggroComponentType));
-        registry.registerSystem(new StunQueueDrainSystem());
-        registry.registerSystem(new AggroQueueDrainSystem());
+        registry.registerSystem(new StunQueueDrainSystem(stunStoreStateType));
+        registry.registerSystem(new AggroQueueDrainSystem(aggroStoreStateType));
     }
 }

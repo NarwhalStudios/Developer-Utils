@@ -1,5 +1,6 @@
 package com.narwhals.perfectutils.api;
 
+import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -19,10 +20,11 @@ import com.narwhals.perfectutils.stun.StunMobUtil;
  * .getMethod("get").invoke(null)}); a hard compile-time dependency on the
  * Developer-Utils jar is not required.
  *
- * <p>All apply/wake calls accept {@link Store} only — the underlying ECS work
+ * <p>All apply/wake calls accept {@link Store} only: the underlying ECS work
  * needs a {@link CommandBuffer} which is not reachable outside a system tick,
  * so requests are enqueued and drained once per world tick by
- * {@code StunQueueDrainSystem}. Worst-case latency is one tick (~50ms at 20 TPS).
+ * {@code StunQueueDrainSystem}, in the world the target lives in. Worst-case
+ * latency is one tick of that world (~50ms at 20 TPS).
  *
  * <p>Query methods ({@link #isStunned}, {@link #isFullStun}, {@link #getRemainingMs})
  * read the ECS component directly via {@link Store}, so they reflect the state
@@ -156,12 +158,25 @@ public final class StunMobAPI {
      * Drain pending requests. Called by
      * {@link com.narwhals.perfectutils.stun.StunQueueDrainSystem} once per
      * world tick with a fresh {@link CommandBuffer}.
+     *
+     * <p>The queue is shared by every world, and each world drains it on its own
+     * thread with its own {@code store}. A drain takes only the requests whose
+     * target lives in {@code store} and leaves the others queued for their own
+     * world's drain (a target from another world fails the store's reference
+     * check, so applying it here would lose it). A request whose target is gone
+     * everywhere is dropped by whichever drain sees it first.
      */
     public void drainPending(@Nonnull Store<EntityStore> store,
             @Nonnull CommandBuffer<EntityStore> commandBuffer, long nowMs) {
-        PendingRequest req;
-        while ((req = pending.poll()) != null) {
-            if (!req.targetRef.isValid()) continue;
+        Iterator<PendingRequest> it = pending.iterator();
+        while (it.hasNext()) {
+            PendingRequest req = it.next();
+            if (!req.targetRef.isValid()) {
+                it.remove();
+                continue;
+            }
+            if (req.targetRef.getStore() != store) continue;
+            it.remove();
             try {
                 switch (req.type) {
                     case STUN -> StunMobUtil.applyStun(req.targetRef, store, commandBuffer,

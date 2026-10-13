@@ -1,5 +1,6 @@
 package com.narwhals.perfectutils.api;
 
+import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -34,11 +35,12 @@ import com.narwhals.perfectutils.aggro.AggroUtil;
  * taunter.</li>
  * </ul>
  *
- * <p>All apply calls accept {@link Store} only — the underlying ECS work
+ * <p>All apply calls accept {@link Store} only: the underlying ECS work
  * needs a {@link CommandBuffer} which is not reachable outside a system tick,
  * so requests are enqueued and drained once per world tick by
- * {@link com.narwhals.perfectutils.aggro.AggroQueueDrainSystem}. Worst-case
- * latency is one tick (~50ms at 20 TPS).
+ * {@link com.narwhals.perfectutils.aggro.AggroQueueDrainSystem}, in the world
+ * the target lives in. Worst-case latency is one tick of that world (~50ms at
+ * 20 TPS).
  *
  * <p>Query methods ({@link #isSuppressed}, {@link #isTaunting},
  * {@link #getRemainingMs}) read the ECS component directly via {@link Store},
@@ -167,6 +169,13 @@ public final class AggroAPI {
      * targeting work lives in {@link com.narwhals.perfectutils.aggro.AggroTickSystem},
      * which iterates the per-player {@link AggroComponent} archetype — Zephyr's
      * proven-safe pattern. Drain just stages components.
+     *
+     * <p>The queue is shared by every world, and each world drains it on its own
+     * thread with its own {@code store}. A drain takes only the requests whose
+     * target lives in {@code store} and leaves the others queued for their own
+     * world's drain (a target from another world fails the store's reference
+     * check, so staging it here would lose it). A request whose target is gone
+     * everywhere is dropped by whichever drain sees it first.
      */
     public void drainPending(@Nonnull Store<EntityStore> store,
             @Nonnull CommandBuffer<EntityStore> commandBuffer, long nowMs) {
@@ -175,9 +184,15 @@ public final class AggroAPI {
             pending.clear();
             return;
         }
-        PendingRequest req;
-        while ((req = pending.poll()) != null) {
-            if (!req.targetRef.isValid()) continue;
+        Iterator<PendingRequest> it = pending.iterator();
+        while (it.hasNext()) {
+            PendingRequest req = it.next();
+            if (!req.targetRef.isValid()) {
+                it.remove();
+                continue;
+            }
+            if (req.targetRef.getStore() != store) continue;
+            it.remove();
             try {
                 switch (req.type) {
                     case DROP_AGGRO -> stageWindow(store, commandBuffer, req,

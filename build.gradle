@@ -27,6 +27,23 @@ javadoc {
     options.addStringOption('Xdoclint:-missing', '-quiet')
 }
 
+// Never call a deprecated engine API (family-wide rule, the workspace's
+// .claude/rules/java-conventions.md): -Xlint:removal surfaces every Hytale API annotated @Deprecated(forRemoval = true)
+// still in use, and -Werror promotes that warning to a hard compile failure, mirroring the MMO
+// jar's own compileJava flag. A future Hytale server update that deprecates-for-removal an API
+// this mod calls will now fail the build on sight instead of silently degrading toward a removed
+// API. compileJava only (not compileTestJava), matching the MMO jar's own scoping. A plain
+// @Deprecated call compiles green here: gradle/deprecation-gate.gradle, applied below and run by
+// `check`, compiles every source set again with -Xlint:deprecation and fails on any such call not
+// marked "// DEPRECATION-KEPT: <why>" (that flag stays off compileJava, whose -Werror would fail a
+// marked call too). The gate file is the MMO's (mmo-family/mmo-skills), copied byte for byte:
+// change it there and copy it here.
+compileJava {
+    options.compilerArgs << '-Xlint:removal' << '-Werror'
+}
+
+apply from: "$rootDir/gradle/deprecation-gate.gradle"
+
 // Adds the Hytale server as a build dependency, allowing you to reference and
 // compile against their code. This requires you to have Hytale installed using
 // the official launcher for now.
@@ -41,8 +58,8 @@ if (!serverRunDir.exists()) {
 }
 
 // Updates the manifest.json file with the latest properties defined in the
-// build.properties file. Currently we update the version and if packs are
-// included with the plugin.
+// gradle.properties file. Currently we update the version, the description
+// (mod_description) and if packs are included with the plugin.
 tasks.register('updatePluginManifest') {
     def manifestFile = file('src/main/resources/manifest.json')
     doLast {
@@ -51,6 +68,7 @@ tasks.register('updatePluginManifest') {
         }
         def manifestJson = new groovy.json.JsonSlurper().parseText(manifestFile.text)
         manifestJson.Version = version
+        manifestJson.Description = mod_description
         manifestJson.IncludesAssetPack = includes_pack.toBoolean()
         manifestFile.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(manifestJson))
     }

@@ -1,7 +1,7 @@
 package com.narwhals.perfectutils.util;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nullable;
 
@@ -18,18 +18,25 @@ import com.narwhals.perfectutils.PerfectUtilsPlugin;
 public final class EffectUtil {
 
     private static final HytaleLogger LOGGER = PerfectUtilsPlugin.LOGGER;
-    private static final Map<String, EntityEffect> effectCache = new HashMap<>();
+    /**
+     * Effects by asset id. Every world's thread reads and fills it, so it is concurrent. It holds
+     * only effects that were found: a miss is looked up again next time, so an effect that was not
+     * loaded yet at the first lookup is still picked up once it is.
+     */
+    private static final Map<String, EntityEffect> effectCache = new ConcurrentHashMap<>();
 
     private EffectUtil() {}
 
     @Nullable
     public static EntityEffect getCachedEffect(String effectName) {
-        if (effectCache.containsKey(effectName)) {
-            return effectCache.get(effectName);
+        EntityEffect cached = effectCache.get(effectName);
+        if (cached != null) {
+            return cached;
         }
         EntityEffect effect = EntityEffect.getAssetMap().getAsset(effectName);
         if (effect == null) {
             LOGGER.atFine().log("EntityEffect '" + effectName + "' not found in asset map");
+            return null;
         }
         effectCache.put(effectName, effect);
         return effect;

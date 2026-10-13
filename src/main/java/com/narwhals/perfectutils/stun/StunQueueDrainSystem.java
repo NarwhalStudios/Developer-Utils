@@ -5,6 +5,7 @@ import javax.annotation.Nullable;
 
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
+import com.hypixel.hytale.component.ResourceType;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
@@ -14,14 +15,19 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.narwhals.perfectutils.api.StunMobAPI;
 
 /**
- * Drains the {@link StunMobAPI} pending queue once per world tick. Queries
- * {@link PlayerRef} so the system fires whenever any player is online; the
- * {@code lastDrainMs} gate ensures the queue is drained exactly once per tick
- * regardless of player count.
+ * Drains the {@link StunMobAPI} pending queue once per world tick, for that world's own targets.
+ * Queries {@link PlayerRef} so the system fires whenever a player is in the world; the world's
+ * {@link StunStoreState} gate makes it drain exactly once per tick regardless of player count.
+ * One instance serves every world, each on its own thread, so the gate lives in the world's store,
+ * never in a field here.
  */
 public class StunQueueDrainSystem extends EntityTickingSystem<EntityStore> {
 
-    private long lastDrainMs = -1L;
+    private final ResourceType<EntityStore, StunStoreState> storeStateType;
+
+    public StunQueueDrainSystem(@Nonnull ResourceType<EntityStore, StunStoreState> storeStateType) {
+        this.storeStateType = storeStateType;
+    }
 
     @Nullable
     @Override
@@ -36,8 +42,8 @@ public class StunQueueDrainSystem extends EntityTickingSystem<EntityStore> {
             @Nonnull CommandBuffer<EntityStore> commandBuffer) {
 
         long nowMs = store.getResource(TimeResource.getResourceType()).getNow().toEpochMilli();
-        if (nowMs == lastDrainMs) return;
-        lastDrainMs = nowMs;
+        StunStoreState state = store.getResource(storeStateType);
+        if (state != null && !state.claimDrain(nowMs)) return;
 
         StunMobAPI api = StunMobAPI.get();
         if (api == null) return;
