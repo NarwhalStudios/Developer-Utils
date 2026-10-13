@@ -1,45 +1,31 @@
 # Perfect Utils
 
-A small library mod for Hytale that other mods can build on top of. By itself it adds no commands, items, or configuration. It sits quietly in the background and lets the mods you actually care about do more interesting things.
+Lets other Hytale mods stun mobs, shake them off your trail, or pull them onto one player. Install it when a mod asks for it.
 
-## Why install it?
+On its own it adds nothing you can see: no items, commands or settings. The mods that use it decide when it kicks in.
 
-Install Perfect Utils only when another mod tells you to. If a mod's description says "requires Perfect Utils," drop this jar in your mods folder and you're done.
+## What you see in game
 
-## What it currently provides
+- A stunned mob stops moving and attacking, can't use abilities, and shows a stun effect until it shakes it off. The same stun works on players, for PvP mods.
+- Mobs near you can lose track of you, for a moment or for a few seconds while you slip away.
+- A taunt pulls nearby mobs off everyone else and onto one player.
 
-### **Mob stun primitive**
-Mods can ask Perfect Utils to stun a mob for a configurable duration. While stunned, the mob:
+## Mods that use it
 
-- Stops moving (movement speed clamped to zero)
-- Stops attacking (its current swing is interrupted, AI is suppressed)
-- Cannot use abilities or interact (locked out for the duration)
-- Plays a brief stun visual
+- [Kweebec Nightmare](https://www.curseforge.com/hytale/mods/kweebec-nightmares) needs it. A thrown Moonbloom stuns the hunter, and the hunter uses it to lock onto a survivor.
+- [MMO Skill Tree](https://www.curseforge.com/hytale/mods/mmo-skill-tree) works better with it. Shield Bash, Shield Slam and Paralyzing Dart stop the target in place, Challenging Shout pulls mobs onto you, and Shadowstep and Vanish make nearby mobs lose track of you. Without it those abilities still hit, just without the stun.
 
-When the stun runs out, the mob shakes it off and resumes whatever it was doing.
+## Install
 
-The same stun also works on players (not just mobs), so PvP mods can lock down an opponent for a short window. A stunned player's client disables its own movement input for the duration.
+Drop the jar into your server's `Mods/` folder. Version 1.3.0 is built for Hytale Update 7. On Update 6 use 1.2.0, and on Update 5 use 1.0.2 to 1.1.0: a build for one update won't load on another.
 
-This is the same primitive that powers parry-stun in narwhals' Perfect Parries, lifted into a standalone library so any mod can use it: ability mods can build "stun on hit" effects, weapon mods can ship stun-on-crit, boss mods can apply long lockdowns during phases, and so on.
+It runs alongside Perfect Parries without the two fighting over a stun.
 
-### **Mob aggro / taunt primitive** 
-Mods can ask Perfect Utils to manipulate which target a mob is paying attention to. Three flavors against the same underlying state:
+## For mod authors
 
-- **Drop aggro**: a one-shot reset. Pursuing mobs in a configurable radius lose track of the player and forget them from their target memory. The mob may pick them up again on the next AI tick if they're still in detection range, so it's useful for "blink away and disappear from the chase," not for permanent invisibility.
-- **Suppress**: a sustained "ignore me" window. For a configurable duration, mobs in radius treat the player as non-hostile and have their target memory continuously wiped. Useful for stealth abilities and short invulnerable phases.
-- **Taunt**: the opposite direction. Drops aggro on every nearby mob (allies, the taunter, anything they were chasing) and pins them to the taunter for a configurable duration. Useful for tank-style "look at me" abilities that pull mobs off teammates.
-
-All three modes work on any mob in the world (bosses, hostile fauna, summoned creatures) without per-mob configuration.
-
-## Compatibility
-
-- Built for Hytale Update 7 (server 0.7.x) as of version 1.3.0. On Update 6 use 1.2.0, and on Update 5 use 1.0.2 to 1.1.0: a build made for one update will not load on another.
-- Plays nicely with Perfect Parries: they each track their own stun state and don't fight each other.
-- The aggro and taunt windows are tracked per-player, so a mod can't accidentally double-apply them; the most recent request wins, the previous one is replaced.
-- No configuration to manage; mods that use Perfect Utils set the durations and radii themselves.
+Perfect Utils gives your mod a stun (`StunMobAPI`) and an aggro controller (`AggroAPI`) that drops, suppresses or taunts, and you set the time and the radius. Both work on any mob with no setup per mob. The [README on GitHub](https://github.com/NarwhalStudios/Developer-Utils) shows how to call them.
 
 ## Credits
 
-- **narwhals**: original mob stun in Perfect Parries; original mob-aggro / visibility wipe in Zephyr. Both primitives are lifted from their work and made reusable here.
-- **ziggfreed**: extracted both into Perfect Utils as a standalone library, added the sustained-suppress and taunt modes alongside the existing one-shot drop.
-
+- **narwhals**: the original mob stun in Perfect Parries and the mob-aggro wipe in Zephyr.
+- **ziggfreed**: turned both into this library and added the suppress and taunt modes.
