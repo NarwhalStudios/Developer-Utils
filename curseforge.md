@@ -17,9 +17,11 @@ On its own it adds nothing you can see: no items, commands or settings. The mods
 
 ## Install
 
-Drop the jar into your server's `Mods/` folder. Version 1.3.0 is built for Hytale Update 7. On Update 6 use 1.2.0, and on Update 5 use 1.0.2 to 1.1.0: a build for one update won't load on another.
+Drop the jar into your server's `Mods/` folder. Version 1.3.0 and newer are built for Hytale Update 7. On Update 6 use 1.2.0, and on Update 5 use 1.0.2 to 1.1.0: a build for one update won't load on another.
 
 It runs alongside Perfect Parries without the two fighting over a stun.
+
+Changes in every version are in the [changelog on GitHub](https://github.com/NarwhalStudios/Developer-Utils/blob/main/CHANGELOG.md).
 
 ## For mod authors
 
