@@ -5,7 +5,6 @@ build/
 run/
 local.properties
 .claude
-CLAUDE.md
 
 # Docs site (Next.js / Fumadocs)
 docs/node_modules/
