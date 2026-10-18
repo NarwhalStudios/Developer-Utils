@@ -88,11 +88,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Asset packs `DU_Entity_Stunned` / `DU_Entity_Staggered` (`HorizontalSpeedMultiplier: 0` + `MovementEffects.DisableAll: true`, 0.5s, re-applied per tick).
 - Public APIs take `Store<EntityStore>` only: requests queue on a `ConcurrentLinkedQueue` and drain on the next world tick (~1 tick / 50 ms latency at 20 TPS).
 
-[1.3.1]: https://github.com/narwhals/perfect-utils/releases/tag/v1.3.1
-[1.3.0]: https://github.com/narwhals/perfect-utils/releases/tag/v1.3.0
-[1.2.0]: https://github.com/narwhals/perfect-utils/releases/tag/v1.2.0
-[1.1.0]: https://github.com/narwhals/perfect-utils/releases/tag/v1.1.0
-[1.0.3]: https://github.com/narwhals/perfect-utils/releases/tag/v1.0.3
-[1.0.2]: https://github.com/narwhals/perfect-utils/releases/tag/v1.0.2
-[1.0.1]: https://github.com/narwhals/perfect-utils/releases/tag/v1.0.1
-[1.0.0]: https://github.com/narwhals/perfect-utils/releases/tag/v1.0.0
+[1.3.1]: https://github.com/NarwhalStudios/Developer-Utils/releases/tag/v1.3.1
+[1.3.0]: https://github.com/NarwhalStudios/Developer-Utils/releases/tag/v1.3.0
