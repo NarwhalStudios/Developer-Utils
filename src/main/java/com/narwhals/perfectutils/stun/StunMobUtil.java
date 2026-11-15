@@ -12,7 +12,6 @@ import com.hypixel.hytale.component.ResourceType;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.protocol.AnimationSlot;
-import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect;
 import com.hypixel.hytale.server.core.asset.type.entityeffect.config.OverlapBehavior;
 import com.hypixel.hytale.server.core.entity.AnimationUtils;
@@ -142,11 +141,17 @@ public final class StunMobUtil {
                 ? StunConstants.STUN_WAKE_DELAY_MS
                 : StunConstants.STAGGER_WAKE_DELAY_MS;
 
-        HytaleServer.SCHEDULED_EXECUTOR.schedule(() -> {
-            if (entityRef.isValid()) {
-                world.execute(() -> resetCombatSupport(entityRef, store));
-            }
-        }, delayMs, TimeUnit.MILLISECONDS);
+        // Update 8 removed the engine's shared scheduler: the plugin's own task registry times the wake
+        // and hands it to the world, and cancels it if the plugin unloads first.
+        try {
+            PerfectUtilsPlugin.get().getTaskRegistry().schedule(() -> {
+                if (entityRef.isValid()) {
+                    resetCombatSupport(entityRef, store);
+                }
+            }, delayMs, TimeUnit.MILLISECONDS, world);
+        } catch (Exception e) {
+            LOGGER.atWarning().log("Could not schedule the stun wake-up: " + e.getMessage());
+        }
     }
 
     public static void enforceStun(Ref<EntityStore> entityRef, CommandBuffer<EntityStore> commandBuffer,
@@ -231,7 +236,7 @@ public final class StunMobUtil {
             CombatActionEvaluator cae = commandBuffer.getComponent(entityRef,
                     CombatActionEvaluator.getComponentType());
             if (cae != null) {
-                cae.completeCurrentAction(true, true);
+                cae.completeCurrentAction(commandBuffer, true, true);
                 cae.clearPrimaryTarget();
             }
 

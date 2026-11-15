@@ -13,7 +13,7 @@
         }
     ],
     "Website": "",
-    "ServerVersion": ">=0.7.0-pre.0 <0.8.0",
+    "ServerVersion": ">=0.8.0-pre.0 <0.9.0",
     "Dependencies": {
         
     },
