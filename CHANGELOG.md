@@ -4,6 +4,12 @@ All notable changes to Perfect Utils are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.2] - unreleased
+
+### Changed
+
+- Built for Hytale Update 8. Older versions don't run on Update 8, and this one doesn't run on Update 7. A stunned creature's wake-up is timed by the plugin's own scheduler, which Update 8 adds in place of the server-wide one it removes, and the stun's combat-action reset uses Update 8's new call.
+
 ## [1.3.1] - 2026-10-16
 
 ### Fixed
